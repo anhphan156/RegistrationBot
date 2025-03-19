@@ -1,4 +1,4 @@
-use registration_bot::entity::interaction::{Interaction, ValidatedJson};
+use registration_bot::entity::interaction::Interaction;
 use registration_bot::entity::interaction_response::{InteractionCallbackData, InteractionResponse};
 use rocket::serde::json::Json;
 
@@ -10,8 +10,8 @@ fn index() -> &'static str {
 }
 
 #[post("/interactions", data = "<interaction>")]
-fn interactions(interaction: ValidatedJson<Interaction>) -> Json<InteractionResponse> {
-    let t = &interaction.0.interaction_type;
+fn interactions(interaction: Interaction) -> Json<InteractionResponse> {
+    let t = &interaction.interaction_type;
     println!("{}", t);
 
     let res = InteractionResponse {

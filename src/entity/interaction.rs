@@ -21,7 +21,7 @@ pub struct Interaction<'r> {
     // pub version: u8
 }
 
-pub struct ValidatedJson<T>(pub T);
+// pub struct ValidatedJson<T>(pub T);
 
 #[derive(Debug)]
 pub enum Error {
@@ -31,11 +31,12 @@ pub enum Error {
     BadSignature
 }
 
-#[async_trait]
-impl<'r, T: Deserialize<'r> + Serialize> FromData<'r> for ValidatedJson<T> {
+#[rocket::async_trait]
+impl<'r> FromData<'r> for Interaction<'_> {
     type Error = Error;
 
     async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> DataOutcome<'r, Self> {
+
         let timestamp : Option<&str> = req.headers().get_one("X-Signature-Timestamp");
         let signature : Option<&str> = req.headers().get_one("X-Signature-Ed25519");
 
@@ -49,7 +50,7 @@ impl<'r, T: Deserialize<'r> + Serialize> FromData<'r> for ValidatedJson<T> {
             Err(_e) => return DataOutcome::Error((Status::BadRequest, Error::BadBody))
         };
 
-        let json: T = match from_str::<T>("{\"type\": 1, \"id\": \"1\"}") {
+        let interaction: Interaction = match from_str::<Interaction>("{\"type\": 1, \"id\": \"1\"}") {
             Ok(parsed) => parsed,
             Err(_) => return DataOutcome::Error((Status::BadRequest, Error::BadJson)),
         };
@@ -71,13 +72,61 @@ impl<'r, T: Deserialize<'r> + Serialize> FromData<'r> for ValidatedJson<T> {
 
         if verify_key(message, signature) {
         // if true {
-            rocket::outcome::Outcome::Success(ValidatedJson(json))
+            rocket::outcome::Outcome::Success(interaction)
             // rocket::outcome::Outcome::Error((Status::NotFound, Error::BADJSON))
         }else {
             rocket::outcome::Outcome::Error((Status::NotFound, Error::BadSignature))
         }
     }
 }
+
+// #[async_trait]
+// impl<'r, T: Deserialize<'r> + Serialize> FromData<'r> for ValidatedJson<T> {
+//     type Error = Error;
+//
+//     async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> DataOutcome<'r, Self> {
+//         let timestamp : Option<&str> = req.headers().get_one("X-Signature-Timestamp");
+//         let signature : Option<&str> = req.headers().get_one("X-Signature-Ed25519");
+//
+//         let (timestamp, signature) : (&str, &str) = match (timestamp, signature) {
+//             (Some(t), Some(s)) => (t,s),
+//             _ => return DataOutcome::Error((Status::Unauthorized, Error::BadHeader))
+//         };
+//
+//         let body = match data.open(10.mebibytes()).into_string().await {
+//             Ok(bytes) => bytes.into_inner(),
+//             Err(_e) => return DataOutcome::Error((Status::BadRequest, Error::BadBody))
+//         };
+//
+//         let json: T = match from_str::<T>("{\"type\": 1, \"id\": \"1\"}") {
+//             Ok(parsed) => parsed,
+//             Err(_) => return DataOutcome::Error((Status::BadRequest, Error::BadJson)),
+//         };
+//
+//         let message : &str = &format!("{}{}", timestamp , body);
+//
+//         // let json = from_slice::<T>(b"{\"type\": 1, \"id\": \"1\"}").expect("");
+//         // let json = from_value(json!(body)).expect("Failed to parse JSON");
+//
+//
+//         // let json = match Json::<T>::from_data(req, Data::from_data(req, a)).await {
+//         //     DataOutcome::Success(json) => json,
+//         //     DataOutcome::Error(_) => return DataOutcome::Error((Status::BadRequest, Error::BADJSON)),
+//         //     DataOutcome::Forward(f) => return DataOutcome::Forward(f)
+//         // };
+//
+//         // let raw_data = rocket::serde::json::to_string(&json.0).unwrap() + timestamp;
+//         // println!("{}", raw_data);
+//
+//         if verify_key(message, signature) {
+//         // if true {
+//             rocket::outcome::Outcome::Success(ValidatedJson(json))
+//             // rocket::outcome::Outcome::Error((Status::NotFound, Error::BADJSON))
+//         }else {
+//             rocket::outcome::Outcome::Error((Status::NotFound, Error::BadSignature))
+//         }
+//     }
+// }
 
 fn verify_key(message: &str, signature: &str)-> bool {
     let public_key = match std::env::var("PUBLIC_KEY") {
