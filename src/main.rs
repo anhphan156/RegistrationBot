@@ -1,5 +1,6 @@
+use registration_bot::entity::interaction::{Interaction, ValidatedJson};
+use registration_bot::entity::interaction_response::{InteractionCallbackData, InteractionResponse};
 use rocket::serde::json::Json;
-use registration_bot::{entity::interaction::Interaction, guards::key_guard::KeyGuard};
 
 #[macro_use] extern crate rocket;
 
@@ -9,11 +10,19 @@ fn index() -> &'static str {
 }
 
 #[post("/interactions", data = "<interaction>")]
-fn interactions(interaction: Json<Interaction<'_>>, _key_guard: KeyGuard) -> &'static str {
-    let t = &interaction.application_id;
+fn interactions(interaction: ValidatedJson<Interaction>) -> Json<InteractionResponse> {
+    let t = &interaction.0.interaction_type;
     println!("{}", t);
 
-    "asdf"
+    let res = InteractionResponse {
+        id: "1",
+        response_type: 4,
+        data: Some(InteractionCallbackData {
+            content: "hahaha"
+        })
+    };
+
+    Json(res)
 }
 
 #[launch]

@@ -1,6 +1,7 @@
 use rocket::serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct AuthorizingIntegrationOwners {
 
