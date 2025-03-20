@@ -1,3 +1,4 @@
+use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::{InteractionCallbackData, InteractionResponse};
 use registration_bot::request::raw_body::RawBody;
 use rocket::serde::json::Json;
@@ -23,7 +24,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 
     let t = &interaction.interaction_type;
 
-    if *t == 1 {
+    if *t == InteractionType::PING {
         return Json(InteractionResponse {
             response_type: 1,
             data: None
@@ -33,7 +34,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     let res = InteractionResponse {
         response_type: 4,
         data: Some(InteractionCallbackData {
-            content: "Received"
+            content: "let's fucking go"
         })
     };
 

@@ -19,10 +19,12 @@ pub struct RawBody {
 
 impl<'r> RawBody {
     pub fn json(&'r self) -> Option<Interaction<'r>> {
+        // match from_str::<Interaction<'r>>(&self.body_str) {
         match from_str::<Interaction>(&self.body_str) {
             Ok(parsed) => Some(parsed),
             Err(e) => {
-                println!("{}", e);
+                println!("Error: {}", e);
+                println!("RawBody: {}", self.body_str);
                 return None;
             }
         }
@@ -55,7 +57,7 @@ impl<'r> FromData<'r> for RawBody {
         if verify_key(message, signature) {
             rocket::outcome::Outcome::Success(raw_interaction)
         }else {
-            rocket::outcome::Outcome::Error((Status::NotFound, Error::BadSignature))
+            rocket::outcome::Outcome::Error((Status::Unauthorized, Error::BadSignature))
         }
     }
 }
