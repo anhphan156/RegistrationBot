@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::{UnimplementedDS, Snowflake};
+use crate::Snowflake;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Interaction<'r> {
@@ -9,9 +9,7 @@ pub struct Interaction<'r> {
     pub application_id: Snowflake<'r>,
     #[serde(rename = "type")]
     pub interaction_type: InteractionType,
-
-    // #[serde(skip)]
-    // pub data: UnimplementedDS,
+    pub data: Option<InteractionData<'r>>,
     // #[serde(skip)]
     // pub guild: UnimplementedDS,
     // #[serde(skip)]
@@ -91,14 +89,14 @@ pub enum InteractionType {
     MODALSUBMIT = 5,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct InteractionData<'r> {
-    id: Snowflake<'r>,
-    name: &'r str,
-    #[serde(rename = "type")]
-    r#type: u8,
-    resolved: Option<u8>, //
-    option: Option<Vec<u8>>, //
-    guild_id: Snowflake<'r>,
-    target_id: Snowflake<'r>,
+    // id: Snowflake<'r>,
+    pub name: &'r str,
+    // #[serde(rename = "type")]
+    // r#type: u8,
+    // resolved: Option<u8>, //
+    // option: Option<Vec<u8>>, //
+    // guild_id: Snowflake<'r>,
+    // target_id: Snowflake<'r>,
 }
