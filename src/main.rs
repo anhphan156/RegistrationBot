@@ -1,4 +1,5 @@
 use registration_bot::discord::embed::Embed;
+use registration_bot::discord::emoji::Emoji;
 use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse};
 use registration_bot::request::raw_body::RawBody;
@@ -55,7 +56,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                             style: 1,
                             label: Some("label"),
                             custom_id: Some("my_button"),
-                            // emoji: None,
+                            emoji: Some(Emoji { id: None, name: Some("🔥"), }),
                         }])
                     }
                 ])

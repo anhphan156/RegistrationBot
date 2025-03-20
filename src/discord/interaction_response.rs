@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use super::embed::Embed;
+use super::{embed::Embed, emoji::Emoji};
 
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -44,5 +44,5 @@ pub struct Component<'r> {
     pub style: u8,
     pub label: Option<&'r str>,
     pub custom_id: Option<&'r str>,
-    // pub emoji: Option<u8>, // replace u8 with emoji struct
+    pub emoji: Option<Emoji<'r>>,
 }
