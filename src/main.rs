@@ -86,62 +86,56 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 
     // Handle requests from interactive components
     if t == InteractionType::MESSAGECOMPONENT {
-        let component_id = data.custom_id.unwrap_or_default();
 
-        let message = interaction.message.unwrap_or_default();
-        let message_id = message.id.unwrap_or_default();
+        let message = interaction.message.unwrap_or_default().clone();
+        let message_id : String = message.id.unwrap_or_default().try_into().clone().expect("");
 
-        let token = interaction.token.unwrap_or_default();
+        let data = interaction.data.unwrap_or_default().clone();
+        let component_id : String = data.custom_id.unwrap_or_default().try_into().clone().expect("");
+        let component_id_2 = component_id.clone();
 
-        let app_id = match std::env::var("APP_ID") {
-            Ok(key) => key,
-            _ => return Json(InteractionResponse {
+        let token : String = interaction.token.unwrap_or_default().try_into().clone().expect("");
+
+        tokio::spawn(async move {
+            let app_id = match std::env::var("APP_ID") {
+                Ok(key) => key,
+                _ => return Json(InteractionResponse {
+                    response_type: 4,
+                    data: Some(InteractionCallbackData {
+                        content: format!("App id not found"),
+                        ..Default::default()
+                    }),
+                }),
+            };
+
+            let new_message = InteractionResponse {
                 response_type: 4,
                 data: Some(InteractionCallbackData {
-                    content: format!("App id not found"),
+                    content: format!("Someone clicked on"),
                     ..Default::default()
-                }),
-            }),
-        };
+                })
+            };
+            let new_message = "{'body': {'content': 'haha'}}";
 
-        let new_message = InteractionResponse {
-            response_type: 4,
-            data: Some(InteractionCallbackData {
-                content: format!("Someone clicked on {}", component_id),
-                ..Default::default()
+            let client = reqwest::Client::new();
+            let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
+            println!();
+            println!("{}", url);
+            println!();
+            let mut new_message = HashMap::new();
+            new_message.insert("content", component_id);
+            let res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send().await;
+
+            Json(InteractionResponse {
+                response_type: 4,
+                data: None
             })
-        };
-        let new_message = "{'body': {'content': 'haha'}}";
-
-        let client = reqwest::Client::new();
-        let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
-        println!();
-        println!("{}", url);
-        println!();
-        // let mut new_message = HashMap::new();
-        // new_message.insert("content", "haha");
-        // let url = "https://00fb-2607-fea8-d22-9a00-727d-16eb-6490-bdf3.ngrok-free.app";
-        // let res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send();
-
-
-
-        // match res {
-        //     Ok(r) => {
-        //         if r.status().is_success() {
-        //             println!("Patch sucess");
-        //         }else {
-        //             println!("Patch failed: {}", r.status());
-        //         }
-        //     },
-        //     Err(e) => {
-        //         println!("Error: {}", e);
-        //     }
-        // };
+        });
 
         return Json(InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
-                content: format!("Someone clicked on {}", component_id),
+                content: format!("Someone clicked on {}", component_id_2),
                 ..Default::default()
             })
         });

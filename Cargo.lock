@@ -1436,6 +1436,7 @@ dependencies = [
  "rocket",
  "serde",
  "serde_repr",
+ "tokio",
 ]
 
 [[package]]

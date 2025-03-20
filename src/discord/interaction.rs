@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::Snowflake;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub struct Interaction<'r> {
     #[serde(borrow)]
     pub id: Snowflake<'r>,
@@ -80,7 +80,7 @@ pub struct Interaction<'r> {
 // }
 
 #[repr(u8)]
-#[derive(Deserialize_repr, Serialize_repr, PartialEq, Eq, Debug)]
+#[derive(Deserialize_repr, Serialize_repr, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum InteractionType {
     PING = 1,
     APPLICATIONCOMMAND = 2,
@@ -89,7 +89,7 @@ pub enum InteractionType {
     MODALSUBMIT = 5,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
 pub struct InteractionData<'r> {
     // id: Snowflake<'r>,
     pub name: Option<&'r str>,
@@ -102,7 +102,7 @@ pub struct InteractionData<'r> {
     pub custom_id: Option<&'r str>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
 pub struct Message<'r> {
     pub id: Option<&'r str>,
 }
