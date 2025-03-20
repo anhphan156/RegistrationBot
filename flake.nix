@@ -31,6 +31,8 @@
             python3
             python3Packages.requests
             ngrok
+            openssl
+            pkg-config
           ];
         };
       }

@@ -13,7 +13,9 @@ pub struct InteractionResponse<'r>{
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde", default)]
 pub struct InteractionCallbackData<'r> {
-    pub content: &'r str,
+    pub content: String,
+
+    #[serde(borrow)]
     pub embeds: Option<Vec<Embed<'r>>>,
     #[serde(rename = "components")]
     pub action_rows: Option<Vec<ActionRow<'r>>>,
@@ -22,7 +24,7 @@ pub struct InteractionCallbackData<'r> {
 impl<'r> Default for InteractionCallbackData<'_> {
     fn default() -> Self {
         InteractionCallbackData { 
-            content: "Default message. Perhaps you forgot to fill up an embed.",
+            content: "Default message. Perhaps you forgot to fill up an embed.".to_string(),
             embeds: None,
             action_rows: None,
         }

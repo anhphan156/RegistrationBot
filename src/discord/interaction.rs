@@ -22,11 +22,11 @@ pub struct Interaction<'r> {
     // pub member: UnimplementedDS,
     // #[serde(skip)]
     // pub user: UnimplementedDS,
-    // pub token: &'r str,
+    pub token: Option<&'r str>,
     // #[serde(skip)]
     // pub version: u8,
     // #[serde(skip)]
-    // pub message: UnimplementedDS,
+    pub message: Option<Message<'r>>,
     // #[serde(skip)]
     // pub app_permissions: Option<&'r str>,
     // #[serde(skip)]
@@ -99,4 +99,10 @@ pub struct InteractionData<'r> {
     // option: Option<Vec<u8>>, //
     // guild_id: Snowflake<'r>,
     // target_id: Snowflake<'r>,
+    pub custom_id: Option<&'r str>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+pub struct Message<'r> {
+    pub id: Option<&'r str>,
 }
