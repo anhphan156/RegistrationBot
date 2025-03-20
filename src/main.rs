@@ -1,6 +1,6 @@
 use registration_bot::discord::embed::Embed;
 use registration_bot::discord::interaction::InteractionType;
-use registration_bot::discord::interaction_response::{InteractionCallbackData, InteractionResponse};
+use registration_bot::discord::interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse};
 use registration_bot::request::raw_body::RawBody;
 use rocket::serde::json::Json;
 
@@ -25,7 +25,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     };
 
     let t = interaction.interaction_type;
-    let name = interaction.data.unwrap_or_default().name;
+    let name = interaction.data.unwrap_or_default().name.unwrap_or_default();
 
     // Ping
     if t == InteractionType::PING {
@@ -35,7 +35,8 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
         })
     }
 
-    if t == InteractionType::APPLICATIONCOMMAND && name == "test1" {
+    // create-event command
+    if t == InteractionType::APPLICATIONCOMMAND && name == "create-event" {
         return Json(InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
@@ -43,8 +44,19 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                 embeds: Some(vec![
                     Embed {
                         title: Some("Buttons"),
-                        // description: Some("Test description"),
                         ..Default::default()
+                    }
+                ]),
+                action_rows: Some(vec![
+                    ActionRow {
+                        component_type: 1,
+                        components: Some(vec![Component {
+                            component_type: 2,
+                            style: 1,
+                            label: Some("label"),
+                            custom_id: Some("my_button"),
+                            // emoji: None,
+                        }])
                     }
                 ])
             })
@@ -54,14 +66,8 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     let res = InteractionResponse {
         response_type: 4,
         data: Some(InteractionCallbackData {
-            content: "let's fucking go",
-            embeds: Some(vec![
-                Embed {
-                    title: Some("Test embed"),
-                    // description: Some("Test description"),
-                    ..Default::default()
-                }
-            ])
+            content: "Command not found (maybe)",
+            ..Default::default()
         })
     };
 

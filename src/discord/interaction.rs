@@ -92,7 +92,7 @@ pub enum InteractionType {
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct InteractionData<'r> {
     // id: Snowflake<'r>,
-    pub name: &'r str,
+    pub name: Option<&'r str>,
     // #[serde(rename = "type")]
     // r#type: u8,
     // resolved: Option<u8>, //

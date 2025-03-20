@@ -11,7 +11,7 @@ def main():
     }
     commands =  [
         {
-            'name': 'test1',
+            'name': 'create-event',
             'description': 'Basic command',
             'type': 1,
             'integration_types': [0, 1],
