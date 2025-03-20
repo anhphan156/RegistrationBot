@@ -87,14 +87,15 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     // Handle requests from interactive components
     if t == InteractionType::MESSAGECOMPONENT {
 
-        let message = interaction.message.unwrap_or_default().clone();
-        let message_id : String = message.id.unwrap_or_default().try_into().clone().expect("");
+        let interaction = interaction.clone();
+        let message = interaction.message.unwrap_or_default();
+        let message_id : String = message.id.unwrap_or_default().try_into().expect("");
 
-        let data = interaction.data.unwrap_or_default().clone();
-        let component_id : String = data.custom_id.unwrap_or_default().try_into().clone().expect("");
+        let data = interaction.data.unwrap_or_default();
+        let component_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
         let component_id_2 = component_id.clone();
 
-        let token : String = interaction.token.unwrap_or_default().try_into().clone().expect("");
+        let token : String = interaction.token.unwrap_or_default().try_into().expect("");
 
         tokio::spawn(async move {
             let app_id = match std::env::var("APP_ID") {
@@ -108,22 +109,20 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                 }),
             };
 
-            let new_message = InteractionResponse {
-                response_type: 4,
-                data: Some(InteractionCallbackData {
-                    content: format!("Someone clicked on"),
+            let new_message = InteractionCallbackData {
+                content: format!("{}", component_id),
+                embeds: Some(vec![Embed {
+                    title: Some("Let's go"),
+                    description: Some(&component_id),
                     ..Default::default()
-                })
+                }]),
+                ..Default::default()
             };
-            let new_message = "{'body': {'content': 'haha'}}";
+            // let mut new_message = HashMap::new();
+            // new_message.insert("content", component_id);
 
             let client = reqwest::Client::new();
             let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
-            println!();
-            println!("{}", url);
-            println!();
-            let mut new_message = HashMap::new();
-            new_message.insert("content", component_id);
             let res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send().await;
 
             Json(InteractionResponse {
@@ -132,6 +131,7 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
             })
         });
 
+        // Make this empherial
         return Json(InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
