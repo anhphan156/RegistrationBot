@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use registration_bot::discord::embed::Embed;
 use registration_bot::discord::emoji::Emoji;
 use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse};
 use registration_bot::request::raw_body::RawBody;
 use rocket::serde::json::{self, Json};
+use rocket::Request;
 
 #[macro_use] extern crate rocket;
 
@@ -115,20 +118,25 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
         println!();
         println!("{}", url);
         println!();
-        let res = client.patch(url).header("Content-Type", "application/json").body(new_message).send().await;
+        // let mut new_message = HashMap::new();
+        // new_message.insert("content", "haha");
+        // let url = "https://00fb-2607-fea8-d22-9a00-727d-16eb-6490-bdf3.ngrok-free.app";
+        // let res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send();
 
-        match res {
-            Ok(r) => {
-                if r.status().is_success() {
-                    println!("Patch sucess");
-                }else {
-                    println!("Patch failed: {}", r.status());
-                }
-            },
-            Err(e) => {
-                println!("Error: {}", e);
-            }
-        };
+
+
+        // match res {
+        //     Ok(r) => {
+        //         if r.status().is_success() {
+        //             println!("Patch sucess");
+        //         }else {
+        //             println!("Patch failed: {}", r.status());
+        //         }
+        //     },
+        //     Err(e) => {
+        //         println!("Error: {}", e);
+        //     }
+        // };
 
         return Json(InteractionResponse {
             response_type: 4,

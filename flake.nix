@@ -33,6 +33,7 @@
             ngrok
             openssl
             pkg-config
+            postman
           ];
         };
       }
