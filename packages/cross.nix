@@ -16,5 +16,4 @@ rustPlatform.buildRustPackage {
   ];
 
   NIX_LDFLAGS = "-L${openssl.out}/lib";
-  # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
 }
