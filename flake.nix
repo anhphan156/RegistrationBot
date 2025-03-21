@@ -41,6 +41,7 @@
             openssl
             pkg-config
             postman
+            just
           ];
           ROCKET_PROFILE = "debug";
         };
