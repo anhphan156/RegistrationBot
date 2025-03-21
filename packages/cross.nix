@@ -16,4 +16,6 @@ rustPlatform.buildRustPackage {
   ];
 
   NIX_LDFLAGS = "-L${openssl.out}/lib";
+  ROCKET_CONFIG = ../Rocket.toml;
+  ROCKET_PROFILE = "production";
 }

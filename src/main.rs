@@ -155,6 +155,11 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 #[launch]
 fn rocket() -> _ {
     rocket::build()
+        // .configure(rocket::Config {
+        //     address: "0.0.0.0".parse().unwrap(),
+        //     port: 6969,
+        //     ..rocket::Config::default()
+        // })
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }
