@@ -1,5 +1,7 @@
-use registration_bot::comands::create_event::CreateEvent;
-use registration_bot::comands::Command;
+use std::sync::Arc;
+
+use registration_bot::commands::create_event::CreateEvent;
+use registration_bot::commands::Command;
 use registration_bot::discord::embed::Embed;
 use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::{InteractionCallbackData, InteractionResponse};
@@ -43,7 +45,6 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     // Handle requests from interactive components
     if interaction_type == InteractionType::MESSAGECOMPONENT {
 
-        let interaction = interaction.clone();
         let message = interaction.message.unwrap_or_default();
         let message_id : String = message.id.unwrap_or_default().try_into().expect("");
 
@@ -56,29 +57,25 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 
         let token : String = interaction.token.unwrap_or_default().try_into().expect("");
 
+        let body = body.clone();
+        let interaction = match body.json() {
+            Some(i) => i,
+            None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
+        };
         tokio::spawn(async move {
             let app_id = match std::env::var("APP_ID") {
                 Ok(key) => key,
-                _ => return Json(InteractionResponse {
-                    response_type: 4,
-                    data: Some(InteractionCallbackData {
-                        content: Some(format!("App id not found")),
-                        ..Default::default()
-                    }),
-                }),
+                _ => return Json(InteractionResponse::send_message("App id not found".to_string())),
             };
 
-            let new_message = InteractionCallbackData {
-                content: Some(format!("{} clicked on {}", reacting_member, component_id)),
-                embeds: Some(vec![Embed {
-                    title: Some("Let's go"),
-                    description: Some(&component_id),
-                    ..Default::default()
-                }]),
-                ..Default::default()
+            let interaction = match body.json() {
+                Some(i) => i,
+                None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
             };
-            // let mut new_message = HashMap::new();
-            // new_message.insert("content", component_id);
+            let command = CreateEvent {
+                interaction,
+            };
+            let new_message = command.action().data;
 
             let client = reqwest::Client::new();
             let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
@@ -88,12 +85,8 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
         });
 
         return Json(InteractionResponse {
-            response_type: 4,
-            data: Some(InteractionCallbackData {
-                content: Some(format!("Registered {}", component_id_2)),
-                flags: Some(1 << 6),
-                ..Default::default()
-            })
+            response_type: 6,
+            data: None,
         });
     }
 

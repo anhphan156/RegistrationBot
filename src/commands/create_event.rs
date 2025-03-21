@@ -1,4 +1,5 @@
 use super::Command;
+use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 
 pub struct CreateEvent<'r> {
@@ -7,16 +8,28 @@ pub struct CreateEvent<'r> {
 
 impl<'r> Command<'r> for CreateEvent<'_> {
     fn action(&self) -> InteractionResponse<'r> {
-        return InteractionResponse {
+
+        let mut embed = Embed {
+            title: Some("Buttons"),
+            ..Default::default()
+        };
+
+        let interaction_type = self.interaction.interaction_type;
+        if interaction_type == InteractionType::MESSAGECOMPONENT {
+            let data = self.interaction.data.unwrap_or_default();
+            let component_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
+
+            let member = self.interaction.member.unwrap_or_default();
+            let reacting_member : String = member.nick.unwrap_or_default().try_into().expect("");
+
+            embed.description = Some(format!("{} clicked on {}", reacting_member, component_id));
+        };
+
+        let interaction_response = InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
                 content: None,
-                embeds: Some(vec![
-                    Embed {
-                        title: Some("Buttons"),
-                        ..Default::default()
-                    }
-                ]),
+                embeds: Some(vec![ embed ]),
                 action_rows: Some(vec![
                     ActionRow {
                         component_type: 1,
@@ -56,5 +69,7 @@ impl<'r> Command<'r> for CreateEvent<'_> {
                 ..Default::default()
             })
         };
+
+        return interaction_response;
     }
 }

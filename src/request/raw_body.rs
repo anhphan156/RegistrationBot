@@ -5,6 +5,11 @@ use ed25519_dalek::{Signature, VerifyingKey, PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH
 use hex;
 use crate::discord::interaction::Interaction;
 
+#[derive(Clone)]
+pub struct RawBody {
+    body_str: String,
+}
+
 #[derive(Debug)]
 pub enum Error {
     BadHeader,
@@ -13,13 +18,8 @@ pub enum Error {
     BadSignature
 }
 
-pub struct RawBody {
-    body_str: String,
-}
-
 impl<'r> RawBody {
     pub fn json(&'r self) -> Option<Interaction<'r>> {
-        // match from_str::<Interaction<'r>>(&self.body_str) {
         match from_str::<Interaction>(&self.body_str) {
             Ok(parsed) => Some(parsed),
             Err(e) => {
