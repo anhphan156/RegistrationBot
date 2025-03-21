@@ -24,45 +24,11 @@
           ];
         };
       in {
-        packages.default = let
-          armPkgs = pkgs.pkgsCross.aarch64-multiplatform;
-          openssl = armPkgs.openssl;
-          # rustPlatform = armPkgs.makeRustPlatform {
-          #   rustc = pkgs.rust-toolchain;
-          #   cargo = pkgs.rust-toolchain;
-          # };
-        in
-          armPkgs.rustPlatform.buildRustPackage {
-            name = "RegistrationBot";
-            src = ./.;
-            cargoLock.lockFile = ./Cargo.lock;
-            # preBuild = ''
-            #   export OPENSSL_DIR="${openssl}"
-            #   export OPENSSL_LIB_DIR="${openssl}/lib"
-            #   export OPENSSL_INCLUDE_DIR="${openssl}/include"
-            #   export PKG_CONFIG_PATH="${openssl}/lib/pkgconfig"
-            #   export PKG_CONFIG_ALLOW_CROSS=1
-            # '';
-            nativeBuildInputs = with armPkgs; [
-              pkg-config
-            ];
-            buildInputs = with armPkgs; [
-              openssl
-            ];
-            # target = "aarch64-unknown-linux-gnu";
-            # cargoBuildFlags = ["--target=aarch64-unknown-linux-gnu"];
-          };
-
-        packages.static = pkgs.pkgsStatic.rustPlatform.buildRustPackage {
-          name = "RegistrationBot";
-          src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
-          nativeBuildInputs = with pkgs.pkgsStatic; [
-            pkg-config
-          ];
-          buildInputs = with pkgs.pkgsStatic; [
-            openssl
-          ];
+        packages = rec {
+          native-dynamic = pkgs.callPackage ./packages/native.nix {};
+          native-static = pkgs.pkgsStatic.callPackage ./packages/native.nix {};
+          aarch64-static = pkgs.pkgsCross.aarch64-multiplatform.pkgsStatic.callPackage ./packages/cross.nix {};
+          default = aarch64-static;
         };
 
         devShells.default = pkgs.mkShell {
