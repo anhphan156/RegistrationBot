@@ -42,7 +42,7 @@
             pkg-config
             postman
           ];
-          ROCKET_PROFILE = "development";
+          ROCKET_PROFILE = "debug";
         };
       }
     );

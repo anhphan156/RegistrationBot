@@ -4,7 +4,7 @@
   openssl,
 }:
 rustPlatform.buildRustPackage {
-  name = "RegistrationBot";
+  name = "registration-bot";
   src = ./..;
   cargoLock.lockFile = ../Cargo.lock;
   depsBuildBuild = [
@@ -16,6 +16,4 @@ rustPlatform.buildRustPackage {
   ];
 
   NIX_LDFLAGS = "-L${openssl.out}/lib";
-  ROCKET_CONFIG = ../Rocket.toml;
-  ROCKET_PROFILE = "production";
 }
