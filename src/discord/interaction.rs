@@ -19,7 +19,7 @@ pub struct Interaction<'r> {
     // #[serde(skip)]
     // pub channel_id: Option<Snowflake<'r>>,
     // #[serde(skip)]
-    // pub member: UnimplementedDS,
+    pub member: Option<Member<'r>>,
     // #[serde(skip)]
     // pub user: UnimplementedDS,
     pub token: Option<&'r str>,
@@ -105,4 +105,9 @@ pub struct InteractionData<'r> {
 #[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
 pub struct Message<'r> {
     pub id: Option<&'r str>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
+pub struct Member<'r> {
+    pub nick: Option<&'r str>,
 }

@@ -10,13 +10,35 @@ pub struct InteractionResponse<'r>{
     pub data: Option<InteractionCallbackData<'r>>
 }
 
+impl<'r> InteractionResponse <'_> {
+    pub fn send_message(message: String) -> Self {
+        InteractionResponse {
+            response_type: 4,
+            data: Some(InteractionCallbackData {
+                content: Some(message),
+                ..Default::default()
+            })
+        }
+    } // send_message
+
+    pub fn send_empty_message() -> Self {
+        InteractionResponse {
+            response_type: 4,
+            data: None,
+        }
+    } // send_empty_message
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde", default)]
 pub struct InteractionCallbackData<'r> {
-    pub content: String,
+    pub content: Option<String>,
 
     #[serde(borrow)]
     pub embeds: Option<Vec<Embed<'r>>>,
+
+    pub flags: Option<u16>,
+
     #[serde(rename = "components")]
     pub action_rows: Option<Vec<ActionRow<'r>>>,
 }
@@ -24,7 +46,8 @@ pub struct InteractionCallbackData<'r> {
 impl<'r> Default for InteractionCallbackData<'_> {
     fn default() -> Self {
         InteractionCallbackData { 
-            content: "Default message. Perhaps you forgot to fill up an embed.".to_string(),
+            content: Some("Default message. Perhaps you forgot to fill up an embed.".to_string()),
+            flags: None,
             embeds: None,
             action_rows: None,
         }
@@ -44,7 +67,8 @@ pub struct Component<'r> {
     #[serde(rename = "type")]
     pub component_type: u8,
     pub style: u8,
-    pub label: Option<&'r str>,
-    pub custom_id: Option<&'r str>,
+    pub label: Option<String>,
+    pub custom_id: Option<String>,
+    #[serde(borrow)]
     pub emoji: Option<Emoji<'r>>,
 }

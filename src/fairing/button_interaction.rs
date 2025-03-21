@@ -11,7 +11,7 @@ impl Fairing for ButtonInteraction {
         }
     }
 
-    async fn on_response<'r>(&self, req: &'r Request<'_>, _res: &mut Response<'r>) {
+    async fn on_response<'r>(&self, _req: &'r Request<'_>, _res: &mut Response<'r>) {
 
     }
 }

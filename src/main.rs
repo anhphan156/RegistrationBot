@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
+use registration_bot::comands::create_event::CreateEvent;
+use registration_bot::comands::Command;
 use registration_bot::discord::embed::Embed;
-use registration_bot::discord::emoji::Emoji;
 use registration_bot::discord::interaction::InteractionType;
-use registration_bot::discord::interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse};
+use registration_bot::discord::interaction_response::{InteractionCallbackData, InteractionResponse};
 use registration_bot::request::raw_body::RawBody;
-use rocket::serde::json::{self, Json};
-use rocket::Request;
+use rocket::serde::json::Json;
 
 #[macro_use] extern crate rocket;
 
@@ -16,24 +14,18 @@ fn index() -> &'static str {
 }
 
 #[post("/interactions", data = "<body>")]
-async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
+fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     let interaction = match body.json() {
         Some(i) => i,
-        None => return Json(InteractionResponse {
-            response_type: 4,
-            data: Some(InteractionCallbackData {
-                content: "Failed to parse interaction json".to_string(),
-                ..Default::default()
-            })
-        })
+        None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
     };
 
-    let t = interaction.interaction_type;
+    let interaction_type = interaction.interaction_type;
     let data = interaction.data.unwrap_or_default();
     let name = data.name.unwrap_or_default();
 
     // Ping
-    if t == InteractionType::PING {
+    if interaction_type == InteractionType::PING {
         return Json(InteractionResponse {
             response_type: 1,
             data: None
@@ -41,55 +33,22 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     }
 
     // create-event command
-    if t == InteractionType::APPLICATIONCOMMAND && name == "create-event" {
-        return Json(InteractionResponse {
-            response_type: 4,
-            data: Some(InteractionCallbackData {
-                content: "Testing buttons".to_string(),
-                embeds: Some(vec![
-                    Embed {
-                        title: Some("Buttons"),
-                        ..Default::default()
-                    }
-                ]),
-                action_rows: Some(vec![
-                    ActionRow {
-                        component_type: 1,
-                        components: Some(vec![
-                            Component {
-                                component_type: 2,
-                                style: 1,
-                                label: Some("Tank"),
-                                custom_id: Some("Tank Button"),
-                                emoji: Some(Emoji { id: None, name: Some("😆"), }),
-                            },
-                            Component {
-                                component_type: 2,
-                                style: 1,
-                                label: Some("DPS"),
-                                custom_id: Some("dpsbtn"),
-                                emoji: Some(Emoji { id: None, name: Some("❤️"), }),
-                            },
-                            Component {
-                                component_type: 2,
-                                style: 1,
-                                label: Some("Healer"),
-                                custom_id: Some("healerbtn"),
-                                emoji: Some(Emoji { id: None, name: Some("🔥"), }),
-                            },
-                        ])
-                    }
-                ])
-            })
-        });
+    if interaction_type == InteractionType::APPLICATIONCOMMAND && name == "create-event" {
+        let command = CreateEvent {
+            interaction,
+        };
+        return Json(command.action());
     }
 
     // Handle requests from interactive components
-    if t == InteractionType::MESSAGECOMPONENT {
+    if interaction_type == InteractionType::MESSAGECOMPONENT {
 
         let interaction = interaction.clone();
         let message = interaction.message.unwrap_or_default();
         let message_id : String = message.id.unwrap_or_default().try_into().expect("");
+
+        let member = interaction.member.unwrap_or_default();
+        let reacting_member : String = member.nick.unwrap_or_default().try_into().expect("");
 
         let data = interaction.data.unwrap_or_default();
         let component_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
@@ -103,14 +62,14 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                 _ => return Json(InteractionResponse {
                     response_type: 4,
                     data: Some(InteractionCallbackData {
-                        content: format!("App id not found"),
+                        content: Some(format!("App id not found")),
                         ..Default::default()
                     }),
                 }),
             };
 
             let new_message = InteractionCallbackData {
-                content: format!("{}", component_id),
+                content: Some(format!("{} clicked on {}", reacting_member, component_id)),
                 embeds: Some(vec![Embed {
                     title: Some("Let's go"),
                     description: Some(&component_id),
@@ -123,33 +82,22 @@ async fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 
             let client = reqwest::Client::new();
             let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
-            let res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send().await;
+            let _res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send().await;
 
-            Json(InteractionResponse {
-                response_type: 4,
-                data: None
-            })
+            Json(InteractionResponse::send_empty_message())
         });
 
-        // Make this empherial
         return Json(InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
-                content: format!("Someone clicked on {}", component_id_2),
+                content: Some(format!("Registered {}", component_id_2)),
+                flags: Some(1 << 6),
                 ..Default::default()
             })
         });
     }
 
-    let res = InteractionResponse {
-        response_type: 4,
-        data: Some(InteractionCallbackData {
-            content: "Command not found (maybe)".to_string(),
-            ..Default::default()
-        })
-    };
-
-    Json(res)
+    Json(InteractionResponse::send_message("Command not found (maybe)".to_string()))
 }
 
 #[launch]
