@@ -8,6 +8,8 @@ pub struct Embed<'r> {
     pub description: Option<String>,
     pub url: Option<&'r str>,
     pub color: Option<u32>,
+    pub image: Option<EmbedImage>,
+    pub thumbnail: Option<EmbedImage>,
 }
 
 impl<'r> Default for Embed<'_> {
@@ -19,6 +21,13 @@ impl<'r> Default for Embed<'_> {
             description: Some(lorem),
             url: None,
             color: Some(15606357),
+            image: None,
+            thumbnail: None,
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EmbedImage {
+    pub url: String,
 }
