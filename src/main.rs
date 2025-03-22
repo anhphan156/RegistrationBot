@@ -1,10 +1,7 @@
-use std::sync::Arc;
-
 use registration_bot::commands::create_event::CreateEvent;
 use registration_bot::commands::Command;
-use registration_bot::discord::embed::Embed;
 use registration_bot::discord::interaction::InteractionType;
-use registration_bot::discord::interaction_response::{InteractionCallbackData, InteractionResponse};
+use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::request::raw_body::RawBody;
 use rocket::serde::json::Json;
 
@@ -45,23 +42,6 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
     // Handle requests from interactive components
     if interaction_type == InteractionType::MESSAGECOMPONENT {
 
-        let message = interaction.message.unwrap_or_default();
-        let message_id : String = message.id.unwrap_or_default().try_into().expect("");
-
-        let member = interaction.member.unwrap_or_default();
-        let reacting_member : String = member.nick.unwrap_or_default().try_into().expect("");
-
-        let data = interaction.data.unwrap_or_default();
-        let component_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
-        let component_id_2 = component_id.clone();
-
-        let token : String = interaction.token.unwrap_or_default().try_into().expect("");
-
-        let body = body.clone();
-        let interaction = match body.json() {
-            Some(i) => i,
-            None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
-        };
         tokio::spawn(async move {
             let app_id = match std::env::var("APP_ID") {
                 Ok(key) => key,
@@ -72,6 +52,10 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                 Some(i) => i,
                 None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
             };
+            let message = interaction.message.unwrap_or_default();
+            let message_id : String = message.id.unwrap_or_default().try_into().expect("");
+            let token : String = interaction.token.unwrap_or_default().try_into().expect("");
+
             let command = CreateEvent {
                 interaction,
             };
