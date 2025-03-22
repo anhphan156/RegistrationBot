@@ -6,8 +6,63 @@ pub struct CreateEvent<'r> {
     pub interaction: Interaction<'r>,
 }
 
+fn generate_buttons<'r>(roles: Vec<(String, &'static str, u32)>) -> Vec<ActionRow<'r>> {
+    let role_count = roles.len();
+    let row_count = role_count / 5 + 1;
+    let rows = (0..row_count).map(|row| ActionRow {
+        component_type: 1,
+        components: {
+            let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
+            Some((0..button_count).map(|button| {
+                let role_index = usize::min(role_count - 1, row * 5 + button);
+                Component {
+                    component_type: 2,
+                    style: 1,
+                    label: Some(format!("{}", roles[role_index].0)),
+                    custom_id: Some(format!("{}", roles[role_index].0)),
+                    emoji: Some(Emoji { id: None, name: Some(roles[role_index].1), }),
+                }
+            }).collect()) 
+        },
+    }).collect();
+
+    rows
+}
+
 impl<'r> Command<'r> for CreateEvent<'_> {
     fn action(&self) -> InteractionResponse<'r> {
+
+        let mut rows = generate_buttons(vec![
+            ("Main Tank".to_string(), "🤣",3),
+            ("Sub Tank".to_string(), "🤣",3),
+            ("DPS 1".to_string(), "Ⓜ️", 3),
+            ("DPS 2".to_string(), "Ⓜ️", 3),
+            ("DPS 3".to_string(), "Ⓜ️", 3),
+            ("DPS 4".to_string(), "Ⓜ️", 3),
+            ("DPS 5".to_string(), "Ⓜ️", 3),
+            ("DPS 6".to_string(), "Ⓜ️", 3),
+            ("DPS 7".to_string(), "Ⓜ️", 3),
+            ("DPS 8".to_string(), "Ⓜ️", 3),
+            ("DPS 9".to_string(), "Ⓜ️", 3),
+            ("Healer 1".to_string(), "😴", 3),
+            ("Healer 2".to_string(), "😴", 3),
+        ]);
+
+        rows.append(&mut vec![ 
+            ActionRow {
+                component_type: 1,
+                components: Some(vec![
+                    Component {
+                        component_type: 2,
+                        style: 1,
+                        label: Some("Cancel".to_string()),
+                        custom_id: Some("cancel".to_string()),
+                        emoji: Some(Emoji { id: None, name: Some("❌"), }),
+                    },
+                ])
+            },
+        ]);
+
 
         let mut embed = Embed {
             title: Some("Buttons"),
@@ -30,42 +85,43 @@ impl<'r> Command<'r> for CreateEvent<'_> {
             data: Some(InteractionCallbackData {
                 content: None,
                 embeds: Some(vec![ embed ]),
-                action_rows: Some(vec![
-                    ActionRow {
-                        component_type: 1,
-                        components: Some(vec![
-                            Component {
-                                component_type: 2,
-                                style: 1,
-                                label: Some(format!("Tank")),
-                                custom_id: Some(format!("Tank")),
-                                emoji: Some(Emoji { id: None, name: Some("🫏"), }),
-                            }
-                        ])
-                    },
-                    ActionRow {
-                        component_type: 1,
-                        components: Some((0..5).map(|x| Component {
-                            component_type: 2,
-                            style: 1,
-                            label: Some(format!("DPS {}", x)),
-                            custom_id: Some(format!("DPS {}", x)),
-                            emoji: Some(Emoji { id: None, name: Some("😆"), }),
-                        }).collect())
-                    },
-                    ActionRow {
-                        component_type: 1,
-                        components: Some(vec![
-                            Component {
-                                component_type: 2,
-                                style: 1,
-                                label: Some("Cancel".to_string()),
-                                custom_id: Some("cancel".to_string()),
-                                emoji: Some(Emoji { id: None, name: Some("❌"), }),
-                            },
-                        ])
-                    },
-                ]),
+                action_rows: Some(rows),
+                // action_rows: Some(vec![
+                //     ActionRow {
+                //         component_type: 1,
+                //         components: Some(vec![
+                //             Component {
+                //                 component_type: 2,
+                //                 style: 1,
+                //                 label: Some(format!("Tank")),
+                //                 custom_id: Some(format!("Tank")),
+                //                 emoji: Some(Emoji { id: None, name: Some("🫏"), }),
+                //             }
+                //         ])
+                //     },
+                //     ActionRow {
+                //         component_type: 1,
+                //         components: Some((0..5).map(|x| Component {
+                //             component_type: 2,
+                //             style: 1,
+                //             label: Some(format!("DPS {}", x)),
+                //             custom_id: Some(format!("DPS {}", x)),
+                //             emoji: Some(Emoji { id: None, name: Some("😆"), }),
+                //         }).collect())
+                //     },
+                //     ActionRow {
+                //         component_type: 1,
+                //         components: Some(vec![
+                //             Component {
+                //                 component_type: 2,
+                //                 style: 1,
+                //                 label: Some("Cancel".to_string()),
+                //                 custom_id: Some("cancel".to_string()),
+                //                 emoji: Some(Emoji { id: None, name: Some("❌"), }),
+                //             },
+                //         ])
+                //     },
+                // ]),
                 ..Default::default()
             })
         };

@@ -54,7 +54,7 @@ impl<'r> Default for InteractionCallbackData<'_> {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ActionRow<'r> {
     #[serde(rename = "type")]
     pub component_type: u8,
@@ -62,7 +62,7 @@ pub struct ActionRow<'r> {
     pub components: Option<Vec<Component<'r>>>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Component<'r> {
     #[serde(rename = "type")]
     pub component_type: u8,
