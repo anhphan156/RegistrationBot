@@ -3,17 +3,19 @@ use registration_bot::commands::Command;
 use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::request::raw_body::RawBody;
+use registration_bot::utils::snowflake::Snowflake;
 use rocket::serde::json::Json;
+use rocket::State;
 
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index() -> &'static str {
+fn index(snowflake: &State<Snowflake>) -> &'static str {
     "Hello, world!!!!!!!!!!!"
 }
 
 #[post("/interactions", data = "<body>")]
-fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
+fn interactions<'r>(body: RawBody, snowflake: &State<Snowflake>) -> Json<InteractionResponse<'r>> {
     let interaction = match body.json() {
         Some(i) => i,
         None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
@@ -80,6 +82,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
 #[launch]
 fn rocket() -> _ {
     rocket::build()
+        .manage(Snowflake::new())
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }

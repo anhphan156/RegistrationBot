@@ -1,5 +1,3 @@
-use std::io::prelude;
-
 use super::Command;
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
