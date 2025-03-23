@@ -2,7 +2,9 @@ use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::Snowflake;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+use super::embed::Embed;
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Interaction<'r> {
     #[serde(borrow)]
     pub id: Snowflake<'r>,
@@ -102,9 +104,10 @@ pub struct InteractionData<'r> {
     pub custom_id: Option<&'r str>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct Message<'r> {
     pub id: Option<&'r str>,
+    pub embeds: Option<Vec<Embed<'r>>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]

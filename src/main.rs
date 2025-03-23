@@ -52,7 +52,7 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse<'r>> {
                 Some(i) => i,
                 None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
             };
-            let message = interaction.message.unwrap_or_default();
+            let message = interaction.message.clone().unwrap_or_default();
             let message_id : String = message.id.unwrap_or_default().try_into().expect("");
             let token : String = interaction.token.unwrap_or_default().try_into().expect("");
 

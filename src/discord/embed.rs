@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Embed<'r> {
     pub title: Option<&'r str>,
     #[serde(rename = "type")]
@@ -10,6 +10,7 @@ pub struct Embed<'r> {
     pub color: Option<u32>,
     pub image: Option<EmbedImage>,
     pub thumbnail: Option<EmbedImage>,
+    pub fields: Option<Vec<EmbedField>>,
 }
 
 impl<'r> Default for Embed<'_> {
@@ -23,11 +24,19 @@ impl<'r> Default for Embed<'_> {
             color: Some(15606357),
             image: None,
             thumbnail: None,
+            fields: None,
         }
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct EmbedImage {
     pub url: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct EmbedField {
+    pub name: String,
+    pub value: String,
+    pub inline: bool,
 }
