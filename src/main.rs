@@ -3,26 +3,26 @@ use registration_bot::commands::Command;
 use registration_bot::discord::interaction::InteractionType;
 use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::request::raw_body::RawBody;
-use registration_bot::utils::snowflake::Snowflake;
+use registration_bot::utils::snowflake::SnowflakeGenerator;
 use rocket::serde::json::Json;
 use rocket::State;
 
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index(snowflake: &State<Snowflake>) -> &'static str {
+fn index() -> &'static str {
     "Hello, world!!!!!!!!!!!"
 }
 
 #[post("/interactions", data = "<body>")]
-fn interactions<'r>(body: RawBody, snowflake: &State<Snowflake>) -> Json<InteractionResponse<'r>> {
+fn interactions<'r>(body: RawBody, snowflake: &State<SnowflakeGenerator>) -> Json<InteractionResponse> {
     let interaction = match body.json() {
         Some(i) => i,
         None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
     };
 
     let interaction_type = interaction.interaction_type;
-    let data = interaction.data.unwrap_or_default();
+    let data = interaction.data.clone().unwrap_or_default();
     let name = data.name.unwrap_or_default();
 
     // Ping
@@ -56,7 +56,7 @@ fn interactions<'r>(body: RawBody, snowflake: &State<Snowflake>) -> Json<Interac
             };
             let message = interaction.message.clone().unwrap_or_default();
             let message_id : String = message.id.unwrap_or_default().try_into().expect("");
-            let token : String = interaction.token.unwrap_or_default().try_into().expect("");
+            let token : String = interaction.token.clone().unwrap_or_default().try_into().expect("");
 
             let command = CreateEvent {
                 interaction,
@@ -82,7 +82,7 @@ fn interactions<'r>(body: RawBody, snowflake: &State<Snowflake>) -> Json<Interac
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .manage(Snowflake::new())
+        .manage(SnowflakeGenerator::new())
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }

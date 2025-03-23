@@ -1,4 +1,4 @@
-type Snowflake<'r> = &'r str;
+type Snowflake = String;
 
 pub mod discord;
 pub mod request;

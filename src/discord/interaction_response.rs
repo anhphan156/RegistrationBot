@@ -3,14 +3,13 @@ use super::{embed::Embed, emoji::Emoji};
 
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct InteractionResponse<'r>{
+pub struct InteractionResponse{
     #[serde(rename = "type")]
     pub response_type: u8,
-    #[serde(borrow)]
-    pub data: Option<InteractionCallbackData<'r>>
+    pub data: Option<InteractionCallbackData>
 }
 
-impl<'r> InteractionResponse <'_> {
+impl InteractionResponse {
     pub fn send_message(message: String) -> Self {
         InteractionResponse {
             response_type: 4,
@@ -31,19 +30,15 @@ impl<'r> InteractionResponse <'_> {
 
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde", default)]
-pub struct InteractionCallbackData<'r> {
+pub struct InteractionCallbackData {
     pub content: Option<String>,
-
-    #[serde(borrow)]
-    pub embeds: Option<Vec<Embed<'r>>>,
-
+    pub embeds: Option<Vec<Embed>>,
     pub flags: Option<u16>,
-
     #[serde(rename = "components")]
-    pub action_rows: Option<Vec<ActionRow<'r>>>,
+    pub action_rows: Option<Vec<ActionRow>>,
 }
 
-impl<'r> Default for InteractionCallbackData<'_> {
+impl Default for InteractionCallbackData {
     fn default() -> Self {
         InteractionCallbackData { 
             content: Some("Default message. Perhaps you forgot to fill up an embed.".to_string()),
@@ -55,20 +50,18 @@ impl<'r> Default for InteractionCallbackData<'_> {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct ActionRow<'r> {
+pub struct ActionRow {
     #[serde(rename = "type")]
     pub component_type: u8,
-    #[serde(borrow)]
-    pub components: Option<Vec<Component<'r>>>,
+    pub components: Option<Vec<Component>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct Component<'r> {
+pub struct Component {
     #[serde(rename = "type")]
     pub component_type: u8,
     pub style: u8,
     pub label: Option<String>,
     pub custom_id: Option<String>,
-    #[serde(borrow)]
-    pub emoji: Option<Emoji<'r>>,
+    pub emoji: Option<Emoji>,
 }

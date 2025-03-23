@@ -3,8 +3,8 @@ use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 
-pub struct CreateEvent<'r> {
-    pub interaction: Interaction<'r>,
+pub struct CreateEvent {
+    pub interaction: Interaction,
 }
 
 struct Role {
@@ -13,16 +13,14 @@ struct Role {
     pub emoji: &'static str,
 }
 
-impl<'r> Command<'r> for CreateEvent<'_> {
-    fn action(&self) -> InteractionResponse<'r> {
-        //
-        // let mut roles = match self.interaction.message.clone().unwrap_or_default().embeds {
-        //     // Generate roles from the embed of button interaction
-        //     Some(prev_embed) => embed_to_roles(&prev_embed[0]),
-        //
-        //     // Generate new roles from a template
-        //     None => 
-        // };
+impl CreateEvent {
+    fn persist_event(&self){
+
+    }
+}
+
+impl Command for CreateEvent {
+    fn action(&self) -> InteractionResponse {
         let mut roles = vec![
                 Role { name: "Tank".to_string(), players: vec![], emoji: "🤣"},
                 Role { name: "DPS 1".to_string(), players: vec![], emoji: "Ⓜ️"},
@@ -43,7 +41,7 @@ impl<'r> Command<'r> for CreateEvent<'_> {
                         style: 1,
                         label: Some("Cancel".to_string()),
                         custom_id: Some("cancel".to_string()),
-                        emoji: Some(Emoji { id: None, name: Some("❌"), }),
+                        emoji: Some(Emoji { id: None, name: Some(String::from("❌")), }),
                     },
                 ])
             },
@@ -51,10 +49,10 @@ impl<'r> Command<'r> for CreateEvent<'_> {
 
         let interaction_type = self.interaction.interaction_type;
         if interaction_type == InteractionType::MESSAGECOMPONENT {
-            let data = self.interaction.data.unwrap_or_default();
+            let data = self.interaction.data.clone().unwrap_or_default();
             let chosen_role_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
 
-            let member = self.interaction.member.unwrap_or_default();
+            let member = self.interaction.member.clone().unwrap_or_default();
             let reacting_member : String = member.nick.unwrap_or_default().try_into().expect("");
 
             if let Some(i) = roles.iter().position(|x| x.name == chosen_role_id) {
@@ -90,7 +88,7 @@ impl<'r> Command<'r> for CreateEvent<'_> {
     }
 }
 
-fn generate_buttons<'r>(roles: &Vec<Role>) -> Vec<ActionRow<'r>> {
+fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
     let role_count = roles.len();
     let row_count = role_count / 5 + 1;
     let rows = (0..row_count).map(|row| ActionRow {
@@ -104,7 +102,7 @@ fn generate_buttons<'r>(roles: &Vec<Role>) -> Vec<ActionRow<'r>> {
                     style: 1,
                     label: Some(format!("{}", roles[role_index].name)),
                     custom_id: Some(format!("{}", roles[role_index].name)),
-                    emoji: Some(Emoji { id: None, name: Some(roles[role_index].emoji), }),
+                    emoji: Some(Emoji { id: None, name: Some(String::from(roles[role_index].emoji)), }),
                 }
             }).collect()) 
         },
@@ -113,7 +111,7 @@ fn generate_buttons<'r>(roles: &Vec<Role>) -> Vec<ActionRow<'r>> {
     rows
 }
 
-fn roles_to_embed<'r>(roles: &Vec<Role>) -> Embed<'r> {
+fn roles_to_embed(roles: &Vec<Role>) -> Embed {
     let fields = roles.iter().map(|role| EmbedField {
         name: format!("{}", role.name),
         value: {
@@ -124,18 +122,8 @@ fn roles_to_embed<'r>(roles: &Vec<Role>) -> Embed<'r> {
     }).collect();
 
     Embed {
-        title: Some("roles"),
+        title: Some(String::from("roles")),
         fields: Some(fields),
         ..Default::default()
     }
 }
-// fn embed_to_roles<'r>(embed: &Embed<'r>) -> Vec<Role> {
-//     if let Some(fields) = &embed.fields {
-//         return fields.iter().map(|field| Role {
-//             name: field.name.clone(),
-//             players: vec![field.value.clone()],
-//             emoji: "",
-//         }).collect();
-//     }
-//     return vec![]
-// }

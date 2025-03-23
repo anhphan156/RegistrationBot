@@ -18,8 +18,8 @@ pub enum Error {
     BadSignature
 }
 
-impl<'r> RawBody {
-    pub fn json(&'r self) -> Option<Interaction<'r>> {
+impl RawBody {
+    pub fn json(&self) -> Option<Interaction> {
         match from_str::<Interaction>(&self.body_str) {
             Ok(parsed) => Some(parsed),
             Err(e) => {

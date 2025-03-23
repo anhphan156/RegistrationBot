@@ -5,13 +5,12 @@ use crate::Snowflake;
 use super::embed::Embed;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Interaction<'r> {
-    #[serde(borrow)]
-    pub id: Snowflake<'r>,
-    pub application_id: Snowflake<'r>,
+pub struct Interaction {
+    pub id: Snowflake,
+    pub application_id: Snowflake,
     #[serde(rename = "type")]
     pub interaction_type: InteractionType,
-    pub data: Option<InteractionData<'r>>,
+    pub data: Option<InteractionData>,
     // #[serde(skip)]
     // pub guild: UnimplementedDS,
     // #[serde(skip)]
@@ -21,14 +20,14 @@ pub struct Interaction<'r> {
     // #[serde(skip)]
     // pub channel_id: Option<Snowflake<'r>>,
     // #[serde(skip)]
-    pub member: Option<Member<'r>>,
+    pub member: Option<Member>,
     // #[serde(skip)]
     // pub user: UnimplementedDS,
-    pub token: Option<&'r str>,
+    pub token: Option<String>,
     // #[serde(skip)]
     // pub version: u8,
     // #[serde(skip)]
-    pub message: Option<Message<'r>>,
+    pub message: Option<Message>,
     // #[serde(skip)]
     // pub app_permissions: Option<&'r str>,
     // #[serde(skip)]
@@ -91,26 +90,26 @@ pub enum InteractionType {
     MODALSUBMIT = 5,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
-pub struct InteractionData<'r> {
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct InteractionData {
     // id: Snowflake<'r>,
-    pub name: Option<&'r str>,
+    pub name: Option<String>,
     // #[serde(rename = "type")]
     // r#type: u8,
     // resolved: Option<u8>, //
     // option: Option<Vec<u8>>, //
     // guild_id: Snowflake<'r>,
     // target_id: Snowflake<'r>,
-    pub custom_id: Option<&'r str>,
+    pub custom_id: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct Message<'r> {
-    pub id: Option<&'r str>,
-    pub embeds: Option<Vec<Embed<'r>>>,
+pub struct Message {
+    pub id: Option<String>,
+    pub embeds: Option<Vec<Embed>>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy)]
-pub struct Member<'r> {
-    pub nick: Option<&'r str>,
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct Member {
+    pub nick: Option<String>,
 }
