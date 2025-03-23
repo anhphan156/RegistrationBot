@@ -1,3 +1,7 @@
+use std::fs;
+use rocket::serde::json::{from_str, to_string};
+use serde::{Deserialize, Serialize};
+
 use super::Command;
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
@@ -7,29 +11,38 @@ pub struct CreateEvent {
     pub interaction: Interaction,
 }
 
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct Role {
     pub name: String,
     pub players: Vec<String>,
-    pub emoji: &'static str,
+    pub emoji: String,
 }
 
 impl CreateEvent {
-    fn persist_event(&self){
-
+    fn persist_event(roles: &Vec<Role>){
+        let roles = to_string(roles);
+        match fs::write("/tmp/registration-bot-id.json", roles.unwrap_or_default()) {
+            _ => {}
+        };
     }
+
 }
 
 impl Command for CreateEvent {
     fn action(&self) -> InteractionResponse {
-        let mut roles = vec![
-                Role { name: "Tank".to_string(), players: vec![], emoji: "🤣"},
-                Role { name: "DPS 1".to_string(), players: vec![], emoji: "Ⓜ️"},
-                Role { name: "DPS 2".to_string(), players: vec![], emoji: "Ⓜ️"},
-                Role { name: "DPS 3".to_string(), players: vec![], emoji: "Ⓜ️"},
-                Role { name: "DPS 4".to_string(), players: vec![], emoji: "Ⓜ️"},
-                Role { name: "DPS 5".to_string(), players: vec![], emoji: "Ⓜ️"},
-                Role { name: "Healer".to_string(), players: vec![], emoji: "😴"},
-            ];
+        let mut roles = match fs::read_to_string("/tmp/registration-bot-id.json") {
+            Ok(content) => from_str(&content).unwrap_or(vec![]),
+            _ => vec![
+                Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
+                Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+                Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+                Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+                Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+                Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+                Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
+            ]
+        };
 
         let mut rows = generate_buttons(&roles);
         rows.append(&mut vec![ 
@@ -74,6 +87,8 @@ impl Command for CreateEvent {
             ..Default::default()
         };
 
+        CreateEvent::persist_event(&roles);
+
         let interaction_response = InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
@@ -102,7 +117,7 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
                     style: 1,
                     label: Some(format!("{}", roles[role_index].name)),
                     custom_id: Some(format!("{}", roles[role_index].name)),
-                    emoji: Some(Emoji { id: None, name: Some(String::from(roles[role_index].emoji)), }),
+                    emoji: Some(Emoji { id: None, name: Some(roles[role_index].emoji.clone()), }),
                 }
             }).collect()) 
         },
