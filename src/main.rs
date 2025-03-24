@@ -10,12 +10,12 @@ use rocket::State;
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!!!!!!!!!!!"
+fn index(_snowflake: &State<SnowflakeGenerator>) -> String {
+    _snowflake.generate()
 }
 
 #[post("/interactions", data = "<body>")]
-fn interactions<'r>(body: RawBody, snowflake: &State<SnowflakeGenerator>) -> Json<InteractionResponse> {
+fn interactions<'r>(body: RawBody, _snowflake: &State<SnowflakeGenerator>) -> Json<InteractionResponse> {
     let interaction = match body.json() {
         Some(i) => i,
         None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
