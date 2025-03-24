@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use crate::utils::snowflake::Snowflake;
+
 use super::{embed::Embed, emoji::Emoji};
 
 #[derive(Deserialize, Serialize)]
@@ -64,4 +66,9 @@ pub struct Component {
     pub label: Option<String>,
     pub custom_id: Option<String>,
     pub emoji: Option<Emoji>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct Extra {
+    pub event_id: Snowflake,
 }

@@ -1,8 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::Snowflake;
-
-use super::embed::Embed;
+use crate::utils::snowflake::Snowflake;
+use super::{embed::Embed, user::User};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Interaction {
@@ -11,6 +10,7 @@ pub struct Interaction {
     #[serde(rename = "type")]
     pub interaction_type: InteractionType,
     pub data: Option<InteractionData>,
+    pub user: Option<User>,
     // #[serde(skip)]
     // pub guild: UnimplementedDS,
     // #[serde(skip)]
@@ -107,9 +107,18 @@ pub struct InteractionData {
 pub struct Message {
     pub id: Option<String>,
     pub embeds: Option<Vec<Embed>>,
+    #[serde(rename="interaction")]
+    pub parent_interaction: Option<InteractionMetadata>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct Member {
     pub nick: Option<String>,
+    pub user: Option<User>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct InteractionMetadata {
+    pub id: Option<String>,
+    pub user: Option<User>,
 }

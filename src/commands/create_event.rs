@@ -1,14 +1,18 @@
 use std::fs;
-use rocket::serde::json::{from_str, to_string};
+use std::path::Path;
+use rocket::serde::json;
 use serde::{Deserialize, Serialize};
 
 use super::Command;
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
+use crate::discord::interaction_response::Extra;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
+use crate::utils::snowflake::Snowflake;
 
 pub struct CreateEvent {
     pub interaction: Interaction,
+    pub event_id: Option<Snowflake>,
 }
 
 
@@ -20,9 +24,9 @@ struct Role {
 }
 
 impl CreateEvent {
-    fn persist_event(roles: &Vec<Role>){
-        let roles = to_string(roles);
-        match fs::write("/tmp/registration-bot-id.json", roles.unwrap_or_default()) {
+    fn persist_event<P: AsRef<Path>>(path: P, roles: &Vec<Role>){
+        let roles = json::to_string(roles);
+        match fs::write(path, roles.unwrap_or_default()) {
             _ => {}
         };
     }
@@ -31,8 +35,10 @@ impl CreateEvent {
 
 impl Command for CreateEvent {
     fn action(&self) -> InteractionResponse {
-        let mut roles = match fs::read_to_string("/tmp/registration-bot-id.json") {
-            Ok(content) => from_str(&content).unwrap_or(vec![]),
+        let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
+
+        let mut roles = match fs::read_to_string(&event_file) {
+            Ok(content) => json::from_str(&content).unwrap_or(vec![]),
             _ => vec![
                 Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
                 Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
@@ -66,14 +72,26 @@ impl Command for CreateEvent {
             let chosen_role_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
 
             let member = self.interaction.member.clone().unwrap_or_default();
-            let reacting_member : String = member.nick.unwrap_or_default().try_into().expect("");
+            let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
+
+            if reacting_member == "" {
+                let user = self.interaction.clone().user;
+                reacting_member = match user {
+                    Some(u) => u.username,
+                    None => String::from("Username not found")
+                };
+            }
 
             if let Some(i) = roles.iter().position(|x| x.name == chosen_role_id) {
-                roles[i].players.push(reacting_member);
+                if !roles[i].players.contains(&reacting_member) {
+                    roles[i].players.push(reacting_member);
+                }
             };
         };
 
         let mut embed = roles_to_embed(&roles);
+        embed.title = Some(String::from("Road anyone?"));
+        embed.description = Some(String::from("Help me test the command yall!\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa"));
         embed.thumbnail = Some(EmbedImage {
             url: "https://i.imgur.com/EVXo4CB.jpeg".to_string()
         });
@@ -87,7 +105,7 @@ impl Command for CreateEvent {
             ..Default::default()
         };
 
-        CreateEvent::persist_event(&roles);
+        CreateEvent::persist_event(event_file, &roles);
 
         let interaction_response = InteractionResponse {
             response_type: 4,
@@ -137,7 +155,6 @@ fn roles_to_embed(roles: &Vec<Role>) -> Embed {
     }).collect();
 
     Embed {
-        title: Some(String::from("roles")),
         fields: Some(fields),
         ..Default::default()
     }

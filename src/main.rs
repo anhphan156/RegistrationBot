@@ -10,12 +10,12 @@ use rocket::State;
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index(_snowflake: &State<SnowflakeGenerator>) -> String {
-    _snowflake.generate()
+fn index(snowflake: &State<SnowflakeGenerator>) -> String {
+    snowflake.generate()
 }
 
 #[post("/interactions", data = "<body>")]
-fn interactions<'r>(body: RawBody, _snowflake: &State<SnowflakeGenerator>) -> Json<InteractionResponse> {
+fn interactions<'r>(body: RawBody) -> Json<InteractionResponse> {
     let interaction = match body.json() {
         Some(i) => i,
         None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
@@ -35,8 +35,10 @@ fn interactions<'r>(body: RawBody, _snowflake: &State<SnowflakeGenerator>) -> Js
 
     // create-event command
     if interaction_type == InteractionType::APPLICATIONCOMMAND && name == "create-event" {
+        let event_id = Some(interaction.id.clone());
         let command = CreateEvent {
             interaction,
+            event_id,
         };
         return Json(command.action());
     }
@@ -58,8 +60,11 @@ fn interactions<'r>(body: RawBody, _snowflake: &State<SnowflakeGenerator>) -> Js
             let message_id : String = message.id.unwrap_or_default().try_into().expect("");
             let token : String = interaction.token.clone().unwrap_or_default().try_into().expect("");
 
+            let event_id = message.parent_interaction.unwrap_or_default().id;
+
             let command = CreateEvent {
                 interaction,
+                event_id,
             };
             let new_message = command.action().data;
 

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::interaction::Interaction;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Embed {
     pub title: Option<String>,
