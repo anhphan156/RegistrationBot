@@ -49,23 +49,6 @@ impl Command for CreateEvent {
             ]
         };
 
-        let mut rows = generate_buttons(&roles);
-        rows.append(&mut vec![ 
-            ActionRow {
-                component_type: 1,
-                components: Some(vec![ 
-                    Component::new(2, 1)
-                        .label(String::from("Cancel"))
-                        .custom_id(String::from("Cancel"))
-                        .emoji(Emoji {
-                            id: None,
-                            name: Some(String::from("❌"))
-                        })
-                        .build()
-                ])
-            },
-        ]);
-
         let interaction_type = self.interaction.interaction_type;
         if interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = self.interaction.data.clone().unwrap_or_default();
@@ -107,6 +90,20 @@ impl Command for CreateEvent {
 
         CreateEvent::persist_event(event_file, &roles);
 
+        let mut rows = generate_buttons(&roles);
+        rows.append(&mut vec![ 
+            ActionRow::new(1,vec![ 
+                Component::new(2, 1)
+                    .label(String::from("Cancel"))
+                    .custom_id(String::from("Cancel"))
+                    .emoji(Emoji {
+                        id: None,
+                        name: Some(String::from("❌"))
+                    })
+                    .build()
+            ])
+        ]);
+
         let data = InteractionCallbackData {
             content: None,
             embeds: Some(vec![ embed, embed2 ]),
@@ -126,22 +123,21 @@ impl Command for CreateEvent {
 fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
     let role_count = roles.len();
     let row_count = role_count / 5 + 1;
-    let rows = (0..row_count).map(|row| ActionRow {
-        component_type: 1,
-        components: {
-            let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
-            Some((0..button_count).map(|button| {
-                let role_index = usize::min(role_count - 1, row * 5 + button);
-                Component::new(2, 1)
-                    .label(format!("{}", roles[role_index].name))
-                    .custom_id(format!("{}", roles[role_index].name))
-                    .emoji(Emoji { id: None, name: Some(roles[role_index].emoji.clone()) })
-                    .build()
-            }).collect()) 
-        },
-    }).collect();
+    let rows = (0..row_count).map(|row| {
+        let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
+        let components = (0..button_count).map(|button| {
+            let role_index = usize::min(role_count - 1, row * 5 + button);
+            Component::new(2, 1)
+                .label(format!("{}", roles[role_index].name))
+                .custom_id(format!("{}", roles[role_index].name))
+                .emoji(Emoji { id: None, name: Some(roles[role_index].emoji.clone()) })
+                .build()
+        }).collect();
 
-    rows
+        ActionRow::new(1, components)
+    });
+
+    rows.collect()
 }
 
 fn roles_to_embed(roles: &Vec<Role>) -> Embed {

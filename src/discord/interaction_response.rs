@@ -100,13 +100,18 @@ impl Default for InteractionCallbackData {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct ActionRow {
     #[serde(rename = "type")]
-    pub component_type: u8,
-    pub components: Option<Vec<Component>>,
+    component_type: u8,
+    components: Option<Vec<Component>>,
 }
 
-// impl ActionRow {
-//     pub fn new(component_type: u8, components: Option<>)
-// }
+impl ActionRow {
+    pub fn new(component_type: u8, components: Vec<Component>) -> Self {
+        ActionRow {
+            component_type,
+            components: Some(components),
+        }
+    }
+}
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Component {
