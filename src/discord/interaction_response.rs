@@ -67,8 +67,3 @@ pub struct Component {
     pub custom_id: Option<String>,
     pub emoji: Option<Emoji>,
 }
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct Extra {
-    pub event_id: Snowflake,
-}

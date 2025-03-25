@@ -1,8 +1,7 @@
 use registration_bot::commands::create_event::CreateEvent;
 use registration_bot::commands::Command;
-use registration_bot::discord::interaction::InteractionType;
+use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
-use registration_bot::request::raw_body::RawBody;
 use registration_bot::utils::snowflake::SnowflakeGenerator;
 use rocket::serde::json::Json;
 use rocket::State;
@@ -14,13 +13,8 @@ fn index(snowflake: &State<SnowflakeGenerator>) -> String {
     snowflake.generate()
 }
 
-#[post("/interactions", data = "<body>")]
-fn interactions<'r>(body: RawBody) -> Json<InteractionResponse> {
-    let interaction = match body.json() {
-        Some(i) => i,
-        None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
-    };
-
+#[post("/interactions", data = "<interaction>")]
+fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
     let interaction_type = interaction.interaction_type;
     let data = interaction.data.clone().unwrap_or_default();
     let name = data.name.unwrap_or_default();
@@ -45,17 +39,12 @@ fn interactions<'r>(body: RawBody) -> Json<InteractionResponse> {
 
     // Handle requests from interactive components
     if interaction_type == InteractionType::MESSAGECOMPONENT {
-
         tokio::spawn(async move {
             let app_id = match std::env::var("APP_ID") {
                 Ok(key) => key,
                 _ => return Json(InteractionResponse::send_message("App id not found".to_string())),
             };
 
-            let interaction = match body.json() {
-                Some(i) => i,
-                None => return Json(InteractionResponse::send_message("Failed to parse interaction json".to_string()))
-            };
             let message = interaction.message.clone().unwrap_or_default();
             let message_id : String = message.id.unwrap_or_default().try_into().expect("");
             let token : String = interaction.token.clone().unwrap_or_default().try_into().expect("");

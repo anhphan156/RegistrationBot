@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use super::Command;
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
-use crate::discord::interaction_response::Extra;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::utils::snowflake::Snowflake;
 
