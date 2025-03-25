@@ -79,11 +79,56 @@ impl InteractionResponseBuilder {
 #[derive(Deserialize, Serialize, Clone)]
 #[serde(crate = "rocket::serde", default)]
 pub struct InteractionCallbackData {
-    pub content: Option<String>,
-    pub embeds: Option<Vec<Embed>>,
-    pub flags: Option<u16>,
+    content: Option<String>,
+    embeds: Option<Vec<Embed>>,
+    flags: Option<u16>,
     #[serde(rename = "components")]
-    pub action_rows: Option<Vec<ActionRow>>,
+    action_rows: Option<Vec<ActionRow>>,
+}
+
+impl InteractionCallbackData {
+    pub fn new() -> InteractionCallbackDataBuilder {
+        InteractionCallbackDataBuilder {
+            content: None,
+            embeds: None,
+            flags: None,
+            action_rows: None,
+        }
+    }
+}
+
+pub struct InteractionCallbackDataBuilder {
+    content: Option<String>,
+    embeds: Option<Vec<Embed>>,
+    flags: Option<u16>,
+    action_rows: Option<Vec<ActionRow>>,
+}
+
+impl InteractionCallbackDataBuilder {
+    pub fn content(&mut self, content: String) -> &mut Self {
+        self.content = Some(content);
+        self
+    }
+    pub fn embeds(&mut self, embeds: Vec<Embed>) -> &mut Self {
+        self.embeds = Some(embeds);
+        self
+    }
+    pub fn flags(&mut self, flags: u16) -> &mut Self {
+        self.flags = Some(flags);
+        self
+    }
+    pub fn action_rows(&mut self, action_rows: Vec<ActionRow>) -> &mut Self {
+        self.action_rows = Some(action_rows);
+        self
+    }
+    pub fn build(&self) -> InteractionCallbackData {
+        InteractionCallbackData {
+            content: self.content.clone(),
+            embeds: self.embeds.clone(),
+            flags: self.flags,
+            action_rows: self.action_rows.clone()
+        }
+    }
 }
 
 impl Default for InteractionCallbackData {
@@ -105,9 +150,9 @@ pub struct ActionRow {
 }
 
 impl ActionRow {
-    pub fn new(component_type: u8, components: Vec<Component>) -> Self {
+    pub fn new(components: Vec<Component>) -> Self {
         ActionRow {
-            component_type,
+            component_type: 1,
             components: Some(components),
         }
     }

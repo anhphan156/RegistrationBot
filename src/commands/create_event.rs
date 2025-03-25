@@ -49,8 +49,7 @@ impl Command for CreateEvent {
             ]
         };
 
-        let interaction_type = self.interaction.interaction_type;
-        if interaction_type == InteractionType::MESSAGECOMPONENT {
+        if self.interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = self.interaction.data.clone().unwrap_or_default();
             let chosen_role_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
 
@@ -71,6 +70,7 @@ impl Command for CreateEvent {
                 }
             };
         };
+        CreateEvent::persist_event(event_file, &roles);
 
         let roles_embed = Embed::new() 
             .title(String::from("Road anyone?"))
@@ -83,11 +83,10 @@ impl Command for CreateEvent {
             .image(EmbedImage::new(String::from("https://i.imgur.com/z28A4yA.jpeg")))
             .build();
 
-        CreateEvent::persist_event(event_file, &roles);
 
         let mut rows = generate_buttons(&roles);
         rows.append(&mut vec![ 
-            ActionRow::new(1,vec![ 
+            ActionRow::new(vec![ 
                 Component::new(2, 1)
                     .label(String::from("Cancel"))
                     .custom_id(String::from("Cancel"))
@@ -99,12 +98,10 @@ impl Command for CreateEvent {
             ])
         ]);
 
-        let data = InteractionCallbackData {
-            content: None,
-            embeds: Some(vec![ roles_embed, picture_embed ]),
-            action_rows: Some(rows),
-            ..Default::default()
-        };
+        let data = InteractionCallbackData::new() 
+            .embeds(vec![ roles_embed, picture_embed ])
+            .action_rows(rows)
+            .build();
 
         let interaction_response = InteractionResponse::new()
             .response_type(4)
@@ -129,7 +126,7 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
                 .build()
         }).collect();
 
-        ActionRow::new(1, components)
+        ActionRow::new(components)
     });
 
     rows.collect()
