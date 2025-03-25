@@ -53,14 +53,15 @@ impl Command for CreateEvent {
         rows.append(&mut vec![ 
             ActionRow {
                 component_type: 1,
-                components: Some(vec![
-                    Component {
-                        component_type: 2,
-                        style: 1,
-                        label: Some("Cancel".to_string()),
-                        custom_id: Some("cancel".to_string()),
-                        emoji: Some(Emoji { id: None, name: Some(String::from("❌")), }),
-                    },
+                components: Some(vec![ 
+                    Component::new(2, 1)
+                        .label(String::from("Cancel"))
+                        .custom_id(String::from("Cancel"))
+                        .emoji(Emoji {
+                            id: None,
+                            name: Some(String::from("❌"))
+                        })
+                        .build()
                 ])
             },
         ]);
@@ -106,15 +107,17 @@ impl Command for CreateEvent {
 
         CreateEvent::persist_event(event_file, &roles);
 
-        let interaction_response = InteractionResponse {
-            response_type: 4,
-            data: Some(InteractionCallbackData {
-                content: None,
-                embeds: Some(vec![ embed, embed2 ]),
-                action_rows: Some(rows),
-                ..Default::default()
-            })
+        let data = InteractionCallbackData {
+            content: None,
+            embeds: Some(vec![ embed, embed2 ]),
+            action_rows: Some(rows),
+            ..Default::default()
         };
+
+        let interaction_response = InteractionResponse::new()
+            .response_type(4)
+            .data(data)
+            .build();
 
         return interaction_response;
     }
@@ -129,13 +132,11 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
             let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
             Some((0..button_count).map(|button| {
                 let role_index = usize::min(role_count - 1, row * 5 + button);
-                Component {
-                    component_type: 2,
-                    style: 1,
-                    label: Some(format!("{}", roles[role_index].name)),
-                    custom_id: Some(format!("{}", roles[role_index].name)),
-                    emoji: Some(Emoji { id: None, name: Some(roles[role_index].emoji.clone()), }),
-                }
+                Component::new(2, 1)
+                    .label(format!("{}", roles[role_index].name))
+                    .custom_id(format!("{}", roles[role_index].name))
+                    .emoji(Emoji { id: None, name: Some(roles[role_index].emoji.clone()) })
+                    .build()
             }).collect()) 
         },
     }).collect();

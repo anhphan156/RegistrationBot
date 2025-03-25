@@ -21,10 +21,7 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
 
     // Ping
     if interaction_type == InteractionType::PING {
-        return Json(InteractionResponse {
-            response_type: 1,
-            data: None
-        })
+        return Json(InteractionResponse::pong())
     }
 
     // create-event command
@@ -55,19 +52,17 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
                 interaction,
                 event_id,
             };
-            let new_message = command.action().data;
+            let interaction_response = command.action();
+            let new_message = interaction_response.get_data();
 
             let client = reqwest::Client::new();
             let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
-            let _res = client.patch(url).header("Content-Type", "application/json").json(&new_message).send().await;
+            let _res = client.patch(url).header("Content-Type", "application/json").json(new_message).send().await;
 
             Json(InteractionResponse::send_empty_message())
         });
 
-        return Json(InteractionResponse {
-            response_type: 6,
-            data: None,
-        });
+        return Json(InteractionResponse::silent_defer());
     }
 
     Json(InteractionResponse::send_message("Command not found (maybe)".to_string()))
