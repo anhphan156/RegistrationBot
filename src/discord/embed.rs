@@ -40,16 +40,16 @@ pub struct EmbedBuilder {
 }
 
 impl EmbedBuilder {
-    pub fn title(&mut self, title: String) -> &mut Self {
-        self.title = Some(title);
+    pub fn title(&mut self, title: impl Into<String>) -> &mut Self {
+        self.title = Some(title.into());
         self
     }
-    pub fn embed_type(&mut self, embed_type: String) -> &mut Self {
-        self.embed_type = Some(embed_type);
+    pub fn embed_type(&mut self, embed_type: impl Into<String>) -> &mut Self {
+        self.embed_type = Some(embed_type.into());
         self
     }
-    pub fn description(&mut self, description: String) -> &mut Self {
-        self.description = Some(description);
+    pub fn description(&mut self, description: impl Into<String>) -> &mut Self {
+        self.description = Some(description.into());
         self
     }
     pub fn url(&mut self, url: String) -> &mut Self {
@@ -109,8 +109,8 @@ pub struct EmbedImage {
 }
 
 impl EmbedImage {
-    pub fn new(url: String) -> Self {
-        EmbedImage { url }
+    pub fn new(url: impl Into<String>) -> Self {
+        EmbedImage { url: url.into() }
     }
 }
 
@@ -122,7 +122,11 @@ pub struct EmbedField {
 }
 
 impl EmbedField {
-    pub fn new(name: String, value: String, inline: bool) -> Self {
-        EmbedField { name, value, inline }
+    pub fn new(name: impl Into<String>, value: impl Into<String>, inline: bool) -> Self {
+        EmbedField { 
+            name: name.into(),
+            value: value.into(),
+            inline,
+        }
     }
 }

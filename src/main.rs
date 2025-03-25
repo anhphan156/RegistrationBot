@@ -3,14 +3,20 @@ use registration_bot::commands::Command;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::utils::snowflake::SnowflakeGenerator;
+use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
 use rocket::State;
 
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index(snowflake: &State<SnowflakeGenerator>) -> String {
-    snowflake.generate()
+fn index() -> String {
+    let t = RegistrationTime::utc_to_unix("5/8/1994 8:00 am".to_string());
+
+    match t {
+        Ok(r) => return r.to_string(),
+        Err(e) => return e.to_string()
+    }
 }
 
 #[post("/interactions", data = "<interaction>")]
@@ -30,6 +36,13 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
         let command = CreateEvent {
             interaction,
             event_id,
+            event_time: {
+                let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
+                match time {
+                    Ok(t) => Some(t),
+                    Err(e) => return Json(InteractionResponse::send_message(format!("Bad datetime: {e}")))
+                }
+            },
         };
         return Json(command.action());
     }
@@ -51,6 +64,7 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
             let command = CreateEvent {
                 interaction,
                 event_id,
+                event_time: None,
             };
             let interaction_response = command.action();
             let new_message = interaction_response.get_data();

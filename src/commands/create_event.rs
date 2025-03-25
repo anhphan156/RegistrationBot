@@ -8,10 +8,12 @@ use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::utils::snowflake::Snowflake;
+use crate::utils::timestamp::RegistrationTime;
 
 pub struct CreateEvent {
     pub interaction: Interaction,
     pub event_id: Option<Snowflake>,
+    pub event_time: Option<i64>,
 }
 
 
@@ -29,7 +31,9 @@ impl CreateEvent {
             _ => {}
         };
     }
-
+    pub fn parse_event (){
+        todo!()
+    }
 }
 
 impl Command for CreateEvent {
@@ -72,17 +76,24 @@ impl Command for CreateEvent {
         };
         CreateEvent::persist_event(event_file, &roles);
 
+        let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
+        let unix_timestamp = self.event_time.unwrap_or_default().to_string();
+        let description_embed = Embed::new()
+            .thumbnail(EmbedImage::new("https://i.imgur.com/EVXo4CB.jpeg"))
+            .title("Event title goes here")
+            .fields(vec![
+                EmbedField::new("Event Info:", format!("📅 Local time: <t:{unix_timestamp}:F>\n📅 UTC time: {utc_timestamp}\n⏰ In : <t:{unix_timestamp}:R>"), false),
+                EmbedField::new("Description:", "description goes here", false),
+            ])
+            .build();
+            
         let roles_embed = Embed::new() 
-            .title(String::from("Road anyone?"))
-            .description(String::from("Event description goes here"))
-            .thumbnail(EmbedImage::new(String::from("https://i.imgur.com/EVXo4CB.jpeg")))
             .fields(roles_to_embedfields(&roles))
             .build();
 
         let picture_embed = Embed::new()
-            .image(EmbedImage::new(String::from("https://i.imgur.com/z28A4yA.jpeg")))
+            .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg"))
             .build();
-
 
         let mut rows = generate_buttons(&roles);
         rows.append(&mut vec![ 
@@ -99,7 +110,7 @@ impl Command for CreateEvent {
         ]);
 
         let data = InteractionCallbackData::new() 
-            .embeds(vec![ roles_embed, picture_embed ])
+            .embeds(vec![ description_embed, roles_embed, picture_embed ])
             .action_rows(rows)
             .build();
 
@@ -134,7 +145,7 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
 
 fn roles_to_embedfields(roles: &Vec<Role>) -> Vec<EmbedField> {
     roles.iter().map(|role| EmbedField::new(
-        format!("{}", role.name),
+        format!("{} {}", role.emoji.clone(), role.name.clone()),
         {
             let players = role.players.join(", ");
             if players.is_empty() { "No one".to_string() } else { players }
