@@ -2,15 +2,89 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Embed {
-    pub title: Option<String>,
+    title: Option<String>,
     #[serde(rename = "type")]
-    pub embed_type: Option<String>,
-    pub description: Option<String>,
-    pub url: Option<String>,
-    pub color: Option<u32>,
-    pub image: Option<EmbedImage>,
-    pub thumbnail: Option<EmbedImage>,
-    pub fields: Option<Vec<EmbedField>>,
+    embed_type: Option<String>,
+    description: Option<String>,
+    url: Option<String>,
+    color: Option<u32>,
+    image: Option<EmbedImage>,
+    thumbnail: Option<EmbedImage>,
+    fields: Option<Vec<EmbedField>>,
+}
+
+impl Embed {
+    pub fn new() -> EmbedBuilder {
+        EmbedBuilder {
+            title: None,
+            embed_type: None,
+            description: None,
+            url: None,
+            color: Some(15606357),
+            image: None,
+            thumbnail: None,
+            fields: None,
+        }
+    }
+}
+
+pub struct EmbedBuilder {
+    title: Option<String>,
+    embed_type: Option<String>,
+    description: Option<String>,
+    url: Option<String>,
+    color: Option<u32>,
+    image: Option<EmbedImage>,
+    thumbnail: Option<EmbedImage>,
+    fields: Option<Vec<EmbedField>>,
+}
+
+impl EmbedBuilder {
+    pub fn title(&mut self, title: String) -> &mut Self {
+        self.title = Some(title);
+        self
+    }
+    pub fn embed_type(&mut self, embed_type: String) -> &mut Self {
+        self.embed_type = Some(embed_type);
+        self
+    }
+    pub fn description(&mut self, description: String) -> &mut Self {
+        self.description = Some(description);
+        self
+    }
+    pub fn url(&mut self, url: String) -> &mut Self {
+        self.url = Some(url);
+        self
+    }
+    pub fn color(&mut self, color: u32) -> &mut Self {
+        self.color = Some(color);
+        self
+    }
+    pub fn image(&mut self, image: EmbedImage) -> &mut Self {
+        self.image = Some(image);
+        self
+    }
+    pub fn thumbnail(&mut self, thumbnail: EmbedImage) -> &mut Self {
+        self.thumbnail = Some(thumbnail);
+        self
+    }
+    pub fn fields(&mut self, fields: Vec<EmbedField>) -> &mut Self {
+        self.fields = Some(fields);
+        self
+    }
+
+    pub fn build(&self) -> Embed {
+        Embed {
+            title: self.title.clone(),
+            embed_type: self.embed_type.clone(),
+            description: self.description.clone(),
+            url: self.url.clone(),
+            color: self.color,
+            image: self.image.clone(),
+            thumbnail: self.thumbnail.clone(),
+            fields: self.fields.clone()
+        }
+    }
 }
 
 impl Default for Embed {
@@ -31,12 +105,24 @@ impl Default for Embed {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct EmbedImage {
-    pub url: String,
+    url: String,
+}
+
+impl EmbedImage {
+    pub fn new(url: String) -> Self {
+        EmbedImage { url }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct EmbedField {
-    pub name: String,
-    pub value: String,
-    pub inline: bool,
+    name: String,
+    value: String,
+    inline: bool,
+}
+
+impl EmbedField {
+    pub fn new(name: String, value: String, inline: bool) -> Self {
+        EmbedField { name, value, inline }
+    }
 }

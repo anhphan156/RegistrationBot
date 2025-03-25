@@ -72,21 +72,16 @@ impl Command for CreateEvent {
             };
         };
 
-        let mut embed = roles_to_embed(&roles);
-        embed.title = Some(String::from("Road anyone?"));
-        embed.description = Some(String::from("Help me test the command yall!\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAanAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa"));
-        embed.thumbnail = Some(EmbedImage {
-            url: "https://i.imgur.com/EVXo4CB.jpeg".to_string()
-        });
+        let roles_embed = Embed::new() 
+            .title(String::from("Road anyone?"))
+            .description(String::from("Event description goes here"))
+            .thumbnail(EmbedImage::new(String::from("https://i.imgur.com/EVXo4CB.jpeg")))
+            .fields(roles_to_embedfields(&roles))
+            .build();
 
-        let embed2 = Embed {
-            title: None,
-            description: None,
-            image: Some(EmbedImage {
-                url: "https://i.imgur.com/z28A4yA.jpeg".to_string()
-            }),
-            ..Default::default()
-        };
+        let picture_embed = Embed::new()
+            .image(EmbedImage::new(String::from("https://i.imgur.com/z28A4yA.jpeg")))
+            .build();
 
         CreateEvent::persist_event(event_file, &roles);
 
@@ -106,7 +101,7 @@ impl Command for CreateEvent {
 
         let data = InteractionCallbackData {
             content: None,
-            embeds: Some(vec![ embed, embed2 ]),
+            embeds: Some(vec![ roles_embed, picture_embed ]),
             action_rows: Some(rows),
             ..Default::default()
         };
@@ -140,18 +135,13 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
     rows.collect()
 }
 
-fn roles_to_embed(roles: &Vec<Role>) -> Embed {
-    let fields = roles.iter().map(|role| EmbedField {
-        name: format!("{}", role.name),
-        value: {
+fn roles_to_embedfields(roles: &Vec<Role>) -> Vec<EmbedField> {
+    roles.iter().map(|role| EmbedField::new(
+        format!("{}", role.name),
+        {
             let players = role.players.join(", ");
             if players.is_empty() { "No one".to_string() } else { players }
         },
-        inline: false,
-    }).collect();
-
-    Embed {
-        fields: Some(fields),
-        ..Default::default()
-    }
+        false
+    )).collect()
 }
