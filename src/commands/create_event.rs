@@ -26,8 +26,7 @@ struct Role {
 impl Command for CreateEvent {
     fn action(&self) -> InteractionResponse {
         let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
-        let mut file_storage = FileStorage::new();
-        let event_storage = file_storage.save_to(&event_file);
+        let event_storage = FileStorage::new(&event_file);
 
         let mut roles = match event_storage.retrieve_json::<Vec<Role>>() {
             Ok(content) => content,

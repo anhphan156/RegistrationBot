@@ -8,15 +8,10 @@ pub struct FileStorage<'a> {
 }
 
 impl<'a> FileStorage<'a> {
-    pub fn new() -> Self {
+    pub fn new(file_name: &'a str) -> Self {
         FileStorage {
-            file_name: None,
+            file_name: Some(file_name),
         }
-    }
-
-    pub fn save_to(&mut self, file_name: &'a str) -> &Self {
-        self.file_name = Some(file_name);
-        self
     }
 }
 
