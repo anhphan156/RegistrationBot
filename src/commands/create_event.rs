@@ -15,6 +15,20 @@ pub struct CreateEvent {
     pub event_time: Option<i64>,
 }
 
+impl CreateEvent {
+    fn get_reacting_player(&self) -> String {
+        let member = self.interaction.member.clone().unwrap_or_default();
+        let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
+        if reacting_member == "" {
+            let user = self.interaction.clone().user;
+            reacting_member = match user {
+                Some(u) => u.username,
+                None => String::from("Username not found")
+            };
+        }
+        return reacting_member;
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 struct Role {
@@ -43,24 +57,16 @@ impl Command for CreateEvent {
 
         if self.interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = self.interaction.data.clone().unwrap_or_default();
-            let chosen_role_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
+            let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
+            let reacting_member = self.get_reacting_player();
 
-            let member = self.interaction.member.clone().unwrap_or_default();
-            let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
-
-            if reacting_member == "" {
-                let user = self.interaction.clone().user;
-                reacting_member = match user {
-                    Some(u) => u.username,
-                    None => String::from("Username not found")
-                };
+            if button_id == "Cancel" {
+                player_cancel(&reacting_member, &mut roles);
+            }else if button_id == "Pregear" {
+                println!("pregearing");
+            } else { // roles button
+                player_pick_role(&reacting_member, &button_id, &mut roles);
             }
-
-            if let Some(i) = roles.iter().position(|x| x.name == chosen_role_id) {
-                if !roles[i].players.contains(&reacting_member) {
-                    roles[i].players.push(reacting_member);
-                }
-            };
         };
         let _ = event_storage.persist_json(&roles); // TODO: handle errors
 
@@ -141,4 +147,18 @@ fn roles_to_embedfields(roles: &Vec<Role>) -> Vec<EmbedField> {
         },
         false
     )).collect()
+}
+
+fn player_cancel(player: &str, roles: &mut Vec<Role>) {
+    for role in roles {
+        role.players.retain(|x| x != player);
+    }
+}
+
+fn player_pick_role(player: &str, role_id: &str, roles: &mut Vec<Role>) {
+    if let Some(i) = roles.iter().position(|x| x.name == role_id) {
+        if !roles[i].players.contains(&String::from(player)) {
+            roles[i].players.push(String::from(player));
+        }
+    };
 }
