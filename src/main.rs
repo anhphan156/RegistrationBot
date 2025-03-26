@@ -2,10 +2,8 @@ use registration_bot::commands::create_event::CreateEvent;
 use registration_bot::commands::Command;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
-use registration_bot::utils::snowflake::SnowflakeGenerator;
 use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
-use rocket::State;
 
 #[macro_use] extern crate rocket;
 
@@ -85,7 +83,6 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .manage(SnowflakeGenerator::new())
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }

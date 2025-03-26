@@ -1,12 +1,11 @@
-use std::fs;
-use std::path::Path;
-use rocket::serde::json;
 use serde::{Deserialize, Serialize};
 
 use super::Command;
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
+use crate::persistence::file_storage::FileStorage;
+use crate::persistence::Persistence;
 use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
@@ -24,24 +23,14 @@ struct Role {
     pub emoji: String,
 }
 
-impl CreateEvent {
-    fn persist_event<P: AsRef<Path>>(path: P, roles: &Vec<Role>){
-        let roles = json::to_string(roles);
-        match fs::write(path, roles.unwrap_or_default()) {
-            _ => {}
-        };
-    }
-    pub fn parse_event (){
-        todo!()
-    }
-}
-
 impl Command for CreateEvent {
     fn action(&self) -> InteractionResponse {
         let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
+        let mut file_storage = FileStorage::new();
+        let event_storage = file_storage.save_to(&event_file);
 
-        let mut roles = match fs::read_to_string(&event_file) {
-            Ok(content) => json::from_str(&content).unwrap_or(vec![]),
+        let mut roles = match event_storage.retrieve_json::<Vec<Role>>() {
+            Ok(content) => content,
             _ => vec![
                 Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
                 Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
@@ -74,7 +63,7 @@ impl Command for CreateEvent {
                 }
             };
         };
-        CreateEvent::persist_event(event_file, &roles);
+        let _ = event_storage.persist_json(&roles); // TODO: handle errors
 
         let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
         let unix_timestamp = self.event_time.unwrap_or_default().to_string();
@@ -92,7 +81,8 @@ impl Command for CreateEvent {
             .build();
 
         let picture_embed = Embed::new()
-            .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg"))
+            // .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg")) // dev
+            .image(EmbedImage::new("https://i.imgur.com/RiB0TBM.jpeg")) // presentation
             .build();
 
         let mut rows = generate_buttons(&roles);

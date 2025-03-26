@@ -3,7 +3,7 @@ use std::{sync::atomic::{AtomicU64, Ordering}, time::{SystemTime, UNIX_EPOCH}};
 const EPOCH: u64 = 1_288_834_974_657; // Twitter Snowflake epoch (Nov 4, 2010)
 const MACHINE_ID_BITS: u64 = 10;
 const SEQUENCE_BITS: u64 = 12;
-const MAX_MACHINE_ID: u64 = (1 << MACHINE_ID_BITS) - 1;
+// const MAX_MACHINE_ID: u64 = (1 << MACHINE_ID_BITS) - 1;
 const MAX_SEQUENCE: u64 = (1 << SEQUENCE_BITS) - 1;
 const TIMESTAMP_SHIFT: u64 = MACHINE_ID_BITS + SEQUENCE_BITS;
 const MACHINE_ID_SHIFT: u64 = SEQUENCE_BITS;
