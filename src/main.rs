@@ -19,6 +19,7 @@ fn index() -> String {
 
 #[post("/interactions", data = "<interaction>")]
 fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
+    println!("{:?}", interaction);
     let interaction_type = interaction.interaction_type;
     let data = interaction.data.clone().unwrap_or_default();
     let name = data.name.unwrap_or_default();
@@ -30,18 +31,19 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
 
     // create-event command
     if interaction_type == InteractionType::APPLICATIONCOMMAND && name == "create-event" {
-        let event_id = Some(interaction.id.clone());
-        let command = CreateEvent {
-            interaction,
-            event_id,
-            event_time: {
+        let event_id = interaction.id.clone();
+        let command = CreateEvent::new()
+            .interaction(interaction)
+            .event_id(event_id)
+            .event_time({
                 let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
                 match time {
-                    Ok(t) => Some(t),
+                    Ok(t) => t,
                     Err(e) => return Json(InteractionResponse::send_message(format!("Bad datetime: {e}")))
                 }
-            },
-        };
+            })
+            .build();
+
         return Json(command.action());
     }
 
@@ -57,13 +59,13 @@ fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
             let message_id : String = message.id.unwrap_or_default().try_into().expect("");
             let token : String = interaction.token.clone().unwrap_or_default().try_into().expect("");
 
-            let event_id = message.parent_interaction.unwrap_or_default().id;
+            let event_id = message.parent_interaction.unwrap_or_default().id.unwrap_or_default();
 
-            let command = CreateEvent {
-                interaction,
-                event_id,
-                event_time: None,
-            };
+            let command = CreateEvent::new()
+                .interaction(interaction)
+                .event_id(event_id)
+                .event_time(0)
+                .build();
             let interaction_response = command.action();
             let new_message = interaction_response.get_data();
 

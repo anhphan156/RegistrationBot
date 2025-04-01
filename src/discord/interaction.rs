@@ -1,4 +1,4 @@
-use rocket::{data::{FromData, Outcome as DataOutcome, ToByteUnit}, http::Status, serde::json::from_str, Data, Request};
+use rocket::{data::{FromData, Outcome as DataOutcome, ToByteUnit}, http::Status, serde::json, Data, Request};
 use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::utils::{crypto::Crypto, snowflake::Snowflake};
@@ -47,7 +47,7 @@ impl<'r> FromData<'r> for Interaction {
         let message : &str = &format!("{}{}", timestamp, body_str);
 
         if Crypto::verify_key(message, signature) {
-            rocket::outcome::Outcome::Success(from_str(&body_str).expect(""))
+            rocket::outcome::Outcome::Success(json::from_str(&body_str).expect(""))
         }else {
             rocket::outcome::Outcome::Error((Status::Unauthorized, Error::BadSignature))
         }
@@ -68,6 +68,16 @@ pub enum InteractionType {
 pub struct InteractionData {
     pub name: Option<String>,
     pub custom_id: Option<String>,
+    pub options: Option<Vec<CommandOption>>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct CommandOption {
+    pub name: Option<String>,
+
+    #[serde(rename="type")]
+    pub option_type: Option<u8>,
+    pub value: Option<json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]

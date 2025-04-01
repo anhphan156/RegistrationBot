@@ -10,12 +10,22 @@ use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
 pub struct CreateEvent {
-    pub interaction: Interaction,
-    pub event_id: Option<Snowflake>,
-    pub event_time: Option<i64>,
+    interaction: Interaction,
+    event_id: Option<Snowflake>,
+    event_time: Option<i64>,
+}
+
+pub struct CreateEventBuilder {
+    interaction: Option<Interaction>,
+    event_id: Option<Snowflake>,
+    event_time: Option<i64>,
 }
 
 impl CreateEvent {
+    pub fn new() -> CreateEventBuilder {
+        CreateEventBuilder { interaction: None, event_id: None, event_time: None }
+    }
+
     fn get_reacting_player(&self) -> String {
         let member = self.interaction.member.clone().unwrap_or_default();
         let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
@@ -27,6 +37,28 @@ impl CreateEvent {
             };
         }
         return reacting_member;
+    }
+}
+
+impl CreateEventBuilder {
+    pub fn interaction(&mut self, interaction: Interaction) -> &mut Self {
+        self.interaction = Some(interaction);
+        self
+    }
+    pub fn event_id(&mut self, event_id: Snowflake) -> &mut Self {
+        self.event_id = Some(event_id);
+        self
+    }
+    pub fn event_time(&mut self, event_time: i64) -> &mut Self {
+        self.event_time = Some(event_time);
+        self
+    }
+    pub fn build(&self) -> CreateEvent {
+        CreateEvent {
+            interaction: self.interaction.clone().expect("Interaction not found"),
+            event_id: self.event_id.clone(),
+            event_time: self.event_time,
+        }
     }
 }
 

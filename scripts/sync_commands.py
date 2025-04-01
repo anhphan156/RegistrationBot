@@ -16,6 +16,14 @@ def main():
             'type': 1,
             'integration_types': [0, 1],
             'contexts': [0, 1, 2],
+            'options': [
+                {
+                    'type': 3,
+                    'name': 'time',
+                    'description': 'UTC time for event',
+                    'required': True
+                }
+            ]
         }
     ];
 
