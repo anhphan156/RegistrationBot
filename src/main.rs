@@ -4,7 +4,6 @@ use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
-use rocket::State;
 
 #[macro_use] extern crate rocket;
 
@@ -19,22 +18,27 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-fn interactions<'r>(interaction: Interaction, command_handler: &State<CommandHandler>) -> Json<InteractionResponse> {
+async fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
+
+    let mut command_handler = CommandHandler::new();
+    command_handler.add_command("create-event", Box::new(CreateEvent::new()));
+
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
         InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_application_command(&interaction)),
-        InteractionType::MESSAGECOMPONENT => return Json(command_handler.handle_interactive_component(&interaction)),
+        InteractionType::MESSAGECOMPONENT => {
+            tokio::spawn(async move {
+                command_handler.handle_interactive_component(&interaction).await
+            });
+            return Json(InteractionResponse::silent_defer())
+        },
         _ => return Json(InteractionResponse::send_message(String::from("Unimplemented interaction")))
     }
 }
 
 #[launch]
 fn rocket() -> _ {
-    let command_handler = CommandHandler::new();
-    command_handler.add_command("create-event", Box::new(CreateEvent::new()));
-
     rocket::build()
-        .manage(command_handler)
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }
