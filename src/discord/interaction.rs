@@ -17,6 +17,25 @@ pub struct Interaction {
     pub message: Option<Message>,
 }
 
+impl Interaction {
+    pub fn get_command_name(&self) -> Option<&str> {
+        if let Some(data) = &self.data {
+            if data.name.is_some() {
+                return data.name.as_deref();
+            }
+        }
+
+        if let Some(message) = &self.message {
+            return match &message.parent_interaction {
+                Some(pi) => pi.name.as_deref(),
+                None => None,
+            }
+        }
+
+        None
+    }
+}
+
 #[derive(Debug)]
 pub enum Error {
     BadHeader,
@@ -98,4 +117,5 @@ pub struct Member {
 pub struct InteractionMetadata {
     pub id: Option<String>,
     pub user: Option<User>,
+    pub name: Option<String>,
 }

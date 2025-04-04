@@ -10,7 +10,7 @@ use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
 pub struct CreateEvent {
-    interaction: Interaction,
+    interaction: Option<Interaction>,
     event_id: Option<Snowflake>,
     event_time: Option<i64>,
 }
@@ -22,15 +22,20 @@ pub struct CreateEventBuilder {
 }
 
 impl CreateEvent {
-    pub fn new() -> CreateEventBuilder {
+    pub fn new() -> CreateEvent{
+        CreateEvent { interaction: None, event_id: None, event_time: None }
+    }
+
+    pub fn builder() -> CreateEventBuilder {
         CreateEventBuilder { interaction: None, event_id: None, event_time: None }
     }
 
     fn get_reacting_player(&self) -> String {
-        let member = self.interaction.member.clone().unwrap_or_default();
+        let interaction = self.interaction.as_ref().unwrap();
+        let member = interaction.member.clone().unwrap_or_default();
         let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
         if reacting_member == "" {
-            let user = self.interaction.clone().user;
+            let user = interaction.clone().user;
             reacting_member = match user {
                 Some(u) => u.username,
                 None => String::from("Username not found")
@@ -55,7 +60,7 @@ impl CreateEventBuilder {
     }
     pub fn build(&self) -> CreateEvent {
         CreateEvent {
-            interaction: self.interaction.clone().expect("Interaction not found"),
+            interaction: self.interaction.clone(),
             event_id: self.event_id.clone(),
             event_time: self.event_time,
         }
@@ -70,7 +75,16 @@ struct Role {
 }
 
 impl Command for CreateEvent {
+    fn init(&mut self, interaction: &Interaction) {
+        let interaction = interaction.clone();
+        let event_id = interaction.id.clone();
+        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
+        self.interaction = Some(interaction);
+        self.event_id = Some(event_id);
+        self.event_time = Some(time.unwrap_or_default());
+    }
     fn action(&self) -> InteractionResponse {
+        let interaction = self.interaction.as_ref().unwrap();
         let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
         let event_storage = FileStorage::new(&event_file);
 
@@ -87,8 +101,8 @@ impl Command for CreateEvent {
             ]
         };
 
-        if self.interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
-            let data = self.interaction.data.clone().unwrap_or_default();
+        if interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
+            let data = interaction.data.clone().unwrap_or_default();
             let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
             let reacting_member = self.get_reacting_player();
 
