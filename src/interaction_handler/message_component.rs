@@ -6,6 +6,6 @@ pub trait MessageComponent {
     }
 
     fn message_component_action(&self) -> InteractionResponse {
-        InteractionResponse::send_message(String::from("Under construction!"))
+        InteractionResponse::create_message(String::from("Under construction!"))
     }
 }

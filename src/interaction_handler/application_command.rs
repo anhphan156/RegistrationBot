@@ -6,6 +6,6 @@ pub trait ApplicationCommand {
     }
 
     fn application_command_action(&self) -> InteractionResponse {
-        InteractionResponse::send_message(String::from("Under construction!"))
+        InteractionResponse::create_message(String::from("Under construction!"))
     }
 }

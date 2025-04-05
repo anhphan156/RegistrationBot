@@ -1,7 +1,7 @@
 use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
 use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
-use registration_bot::discord::interaction_response::InteractionResponse;
+use registration_bot::discord::interaction_response::{IRStatus, InteractionResponse};
 use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
 
@@ -28,11 +28,19 @@ async fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse>
         InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_slash_command(&interaction)),
         InteractionType::MESSAGECOMPONENT => {
             tokio::spawn(async move {
-                command_handler.handle_message_component(&interaction).await
+                let status = command_handler.handle_message_component(&interaction).await;
+                match status {
+                    Ok(s) => println!("Message component handler: {:?}", s),
+                    Err(s) => {
+                        println!("Failed to edit message {:?}", s);
+                        let _ = InteractionResponse::create_emphemeral_message(String::from("Hell yeah"))
+                            .send_follow_up_message(&interaction).await;
+                    },
+                }
             });
             return Json(InteractionResponse::silent_defer())
         },
-        _ => return Json(InteractionResponse::send_message(String::from("Unimplemented interaction")))
+        _ => return Json(InteractionResponse::create_message(String::from("Unimplemented interaction")))
     }
 }
 

@@ -9,6 +9,7 @@ pub struct InteractionResponse{
     data: Option<InteractionCallbackData>
 }
 
+#[derive(Debug)]
 pub enum IRStatus {
     AppIdNotFound,
     PatchFailed,
@@ -26,6 +27,25 @@ impl InteractionResponse {
     pub fn get_data<'r>(&'r self) -> &'r Option<InteractionCallbackData> {
         &self.data
     } // get_data
+
+    pub async fn send_follow_up_message(&self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
+        let app_id = match std::env::var("APP_ID") {
+            Ok(key) => key,
+            _ => return Err(IRStatus::AppIdNotFound),
+        };
+
+        let token = interaction.token.clone().unwrap_or_default();
+
+        let client = reqwest::Client::new();
+        let url = format!("https://discord.com/api/v10/webhooks/{}/{}", app_id, token);
+        let res = client.post(url).header("Content-Type", "application/json").json(&self.data).send().await;
+
+        if res.is_err() {
+            return Err(IRStatus::PatchFailed);
+        }
+
+        Ok(IRStatus::PatchSuccess)
+    }
     
     pub async fn edit_message(&self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
         let app_id = match std::env::var("APP_ID") {
@@ -54,7 +74,18 @@ impl InteractionResponse {
         }
     } // pong
 
-    pub fn send_message(message: String) -> Self {
+    pub fn create_emphemeral_message(message: String) -> Self {
+        InteractionResponse {
+            response_type: 4,
+            data: Some(InteractionCallbackData {
+                content: Some(message),
+                flags: Some(1 << 6),
+                ..Default::default()
+            })
+        }
+    } // send_message
+
+    pub fn create_message(message: String) -> Self {
         InteractionResponse {
             response_type: 4,
             data: Some(InteractionCallbackData {
@@ -64,7 +95,7 @@ impl InteractionResponse {
         }
     } // send_message
 
-    pub fn send_empty_message() -> Self {
+    pub fn create_empty_message() -> Self {
         InteractionResponse {
             response_type: 4,
             data: None,
