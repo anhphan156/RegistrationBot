@@ -1,6 +1,8 @@
-use serde::{Deserialize, Serialize};
+mod role;
 
-use super::Command;
+use role::*;
+use crate::interaction_handler::message_component::MessageComponent;
+use crate::interaction_handler::{ApplicationCommand, InteractionHandle};
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
@@ -15,19 +17,9 @@ pub struct CreateEvent {
     event_time: Option<i64>,
 }
 
-pub struct CreateEventBuilder {
-    interaction: Option<Interaction>,
-    event_id: Option<Snowflake>,
-    event_time: Option<i64>,
-}
-
 impl CreateEvent {
     pub fn new() -> CreateEvent{
         CreateEvent { interaction: None, event_id: None, event_time: None }
-    }
-
-    pub fn builder() -> CreateEventBuilder {
-        CreateEventBuilder { interaction: None, event_id: None, event_time: None }
     }
 
     fn get_reacting_player(&self) -> String {
@@ -45,37 +37,11 @@ impl CreateEvent {
     }
 }
 
-impl CreateEventBuilder {
-    pub fn interaction(&mut self, interaction: Interaction) -> &mut Self {
-        self.interaction = Some(interaction);
-        self
-    }
-    pub fn event_id(&mut self, event_id: Snowflake) -> &mut Self {
-        self.event_id = Some(event_id);
-        self
-    }
-    pub fn event_time(&mut self, event_time: i64) -> &mut Self {
-        self.event_time = Some(event_time);
-        self
-    }
-    pub fn build(&self) -> CreateEvent {
-        CreateEvent {
-            interaction: self.interaction.clone(),
-            event_id: self.event_id.clone(),
-            event_time: self.event_time,
-        }
-    }
-}
+impl InteractionHandle for CreateEvent {}
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-struct Role {
-    pub name: String,
-    pub players: Vec<String>,
-    pub emoji: String,
-}
 
-impl Command for CreateEvent {
-    fn init(&mut self, interaction: &Interaction) {
+impl ApplicationCommand for CreateEvent {
+    fn application_command_init(&mut self, interaction: &Interaction) {
         let interaction = interaction.clone();
         let event_id = interaction.id.clone();
         let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
@@ -83,7 +49,7 @@ impl Command for CreateEvent {
         self.event_id = Some(event_id);
         self.event_time = Some(time.unwrap_or_default());
     }
-    fn action(&self) -> InteractionResponse {
+    fn application_command_action(&self) -> InteractionResponse {
         let interaction = self.interaction.as_ref().unwrap();
         let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
         let event_storage = FileStorage::new(&event_file);
@@ -164,6 +130,21 @@ impl Command for CreateEvent {
     }
 }
 
+impl MessageComponent for CreateEvent {
+    fn message_component_init(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata){
+        let interaction = interaction.clone();
+        let event_id = parent_interaction.id.clone().unwrap_or_default();
+        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
+        self.interaction = Some(interaction);
+        self.event_id = Some(event_id);
+        self.event_time = Some(time.unwrap_or_default());
+    }
+
+    fn message_component_action(&self) -> InteractionResponse {
+        self.application_command_action()
+    }
+}
+
 fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
     let role_count = roles.len();
     let row_count = role_count / 5 + 1;
@@ -182,17 +163,6 @@ fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
     });
 
     rows.collect()
-}
-
-fn roles_to_embedfields(roles: &Vec<Role>) -> Vec<EmbedField> {
-    roles.iter().map(|role| EmbedField::new(
-        format!("{} {}", role.emoji.clone(), role.name.clone()),
-        {
-            let players = role.players.join(", ");
-            if players.is_empty() { "No one".to_string() } else { players }
-        },
-        false
-    )).collect()
 }
 
 fn player_cancel(player: &str, roles: &mut Vec<Role>) {

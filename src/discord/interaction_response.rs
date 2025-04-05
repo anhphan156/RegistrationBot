@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use super::{embed::Embed, emoji::Emoji};
+use super::{embed::Embed, emoji::Emoji, interaction::Interaction};
 
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -7,6 +7,12 @@ pub struct InteractionResponse{
     #[serde(rename = "type")]
     response_type: u8,
     data: Option<InteractionCallbackData>
+}
+
+pub enum IRStatus {
+    AppIdNotFound,
+    PatchFailed,
+    PatchSuccess,
 }
 
 impl InteractionResponse {
@@ -20,6 +26,26 @@ impl InteractionResponse {
     pub fn get_data<'r>(&'r self) -> &'r Option<InteractionCallbackData> {
         &self.data
     } // get_data
+    
+    pub async fn edit_message(&self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
+        let app_id = match std::env::var("APP_ID") {
+            Ok(key) => key,
+            _ => return Err(IRStatus::AppIdNotFound),
+        };
+
+        let message_id = interaction.message.clone().unwrap_or_default().id.unwrap_or_default();
+        let token = interaction.token.clone().unwrap_or_default();
+
+        let client = reqwest::Client::new();
+        let url = format!("https://discord.com/api/v10/webhooks/{}/{}/messages/{}", app_id, token, message_id);
+        let res = client.patch(url).header("Content-Type", "application/json").json(&self.data).send().await;
+
+        if res.is_err() {
+            return Err(IRStatus::PatchFailed);
+        }
+
+        Ok(IRStatus::PatchSuccess)
+    }
 
     pub fn pong() -> Self {
         InteractionResponse {

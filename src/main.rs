@@ -1,5 +1,5 @@
-use registration_bot::commands::create_event::CreateEvent;
-use registration_bot::commands::CommandHandler;
+use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
+use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::utils::timestamp::RegistrationTime;
@@ -20,15 +20,15 @@ fn index() -> String {
 #[post("/interactions", data = "<interaction>")]
 async fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
 
-    let mut command_handler = CommandHandler::new();
-    command_handler.add_command("create-event", Box::new(CreateEvent::new()));
+    let mut command_handler = InteractionHandler::new();
+    command_handler.add_interaction("create-event", Box::new(CreateEvent::new()));
 
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
-        InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_application_command(&interaction)),
+        InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_slash_command(&interaction)),
         InteractionType::MESSAGECOMPONENT => {
             tokio::spawn(async move {
-                command_handler.handle_interactive_component(&interaction).await
+                command_handler.handle_message_component(&interaction).await
             });
             return Json(InteractionResponse::silent_defer())
         },
