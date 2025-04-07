@@ -1,7 +1,7 @@
 use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
 use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
-use registration_bot::discord::interaction_response::{IRStatus, InteractionResponse};
+use registration_bot::discord::interaction_response::InteractionResponse;
 use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
 

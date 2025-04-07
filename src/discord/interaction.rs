@@ -34,6 +34,19 @@ impl Interaction {
 
         None
     }
+
+    pub fn get_interacted_member(&self) -> String {
+        let mut interacted_member = self.member.as_ref().map(|x| x.nick.clone()).unwrap_or_default().unwrap_or_default();
+        if interacted_member == "" {
+            let user = &self.user;
+            interacted_member = match user {
+                Some(u) => u.username.clone(),
+                None => String::from("Username not found")
+            };
+        }
+
+        interacted_member
+    }
 }
 
 #[derive(Debug)]

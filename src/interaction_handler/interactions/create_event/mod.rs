@@ -21,20 +21,6 @@ impl CreateEvent {
     pub fn new() -> CreateEvent{
         CreateEvent { interaction: None, event_id: None, event_time: None }
     }
-
-    fn get_reacting_player(&self) -> String {
-        let interaction = self.interaction.as_ref().unwrap();
-        let member = interaction.member.clone().unwrap_or_default();
-        let mut reacting_member : String = member.nick.unwrap_or_default().try_into().expect("Failed to parse reacting member");
-        if reacting_member == "" {
-            let user = interaction.clone().user;
-            reacting_member = match user {
-                Some(u) => u.username,
-                None => String::from("Username not found")
-            };
-        }
-        return reacting_member;
-    }
 }
 
 impl InteractionHandle for CreateEvent {}
@@ -70,7 +56,7 @@ impl ApplicationCommand for CreateEvent {
         if interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = interaction.data.clone().unwrap_or_default();
             let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
-            let reacting_member = self.get_reacting_player();
+            let reacting_member = interaction.get_interacted_member();
 
             if button_id == "Cancel" {
                 player_cancel(&reacting_member, &mut roles);
