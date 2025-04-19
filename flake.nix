@@ -42,6 +42,7 @@
             pkg-config
             postman
             just
+            redis
           ];
           ROCKET_PROFILE = "debug";
         };

@@ -2,8 +2,10 @@ use registration_bot::interaction_handler::interactions::create_event::CreateEve
 use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
 use registration_bot::discord::interaction_response::InteractionResponse;
+use registration_bot::persistence::redis_storage::RedisStorage;
 use registration_bot::utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
+use rocket::State;
 
 #[macro_use] extern crate rocket;
 
@@ -18,7 +20,7 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-async fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse> {
+async fn interactions<'r>(interaction: Interaction, redis_storage: &State<RedisStorage>) -> Json<InteractionResponse> {
 
     let mut command_handler = InteractionHandler::new();
     command_handler.add_interaction("create-event", Box::new(CreateEvent::new()));
@@ -46,7 +48,10 @@ async fn interactions<'r>(interaction: Interaction) -> Json<InteractionResponse>
 
 #[launch]
 fn rocket() -> _ {
+    let redis_storage = RedisStorage::new();
+
     rocket::build()
+        .manage(redis_storage)
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }

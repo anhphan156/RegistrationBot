@@ -25,11 +25,12 @@ pub enum PersistenceResult {
     Success,
 }
 
+#[rocket::async_trait]
 impl Persistence for FileStorage<'_> {
     type PersistenceError = PersistenceError;
     type PersistenceResult = PersistenceResult;
 
-    fn persist_json<T: Serialize>(&self, data: &T) -> Result<PersistenceResult, PersistenceError> {
+    async fn persist_json<T: Serialize + std::marker::Sync>(&self, data: &T) -> Result<PersistenceResult, PersistenceError> {
         let roles = json::to_string(&data);
         if let Err(e) = roles {
             println!("File persising failed: {}", e);
