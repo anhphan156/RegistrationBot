@@ -39,8 +39,7 @@ impl Persistence for FileStorage<'_> {
         Ok(super::PersistenceResult::Success)
     }
 
-    fn retrieve_json<T>(&self) -> Result<T, super::PersistenceError> where T: DeserializeOwned {
-
+    async fn retrieve_json<T>(&self) -> Result<T, super::PersistenceError> where T: DeserializeOwned + std::marker::Sync {
         if let None = self.file_name {
             return Err(super::PersistenceError::NoFileName);
         }

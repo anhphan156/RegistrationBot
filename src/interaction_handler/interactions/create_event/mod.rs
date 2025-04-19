@@ -1,6 +1,7 @@
 mod role;
 
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use role::*;
 use crate::interaction_handler::message_component::MessageComponent;
@@ -18,11 +19,11 @@ pub struct CreateEvent {
     interaction: Option<Interaction>,
     event_id: Option<Snowflake>,
     event_time: Option<i64>,
-    redis_storage: Arc<RedisStorage>,
+    redis_storage: Arc<Mutex<RedisStorage>>,
 }
 
 impl CreateEvent {
-    pub fn new(redis_storage: Arc<RedisStorage>) -> CreateEvent{
+    pub fn new(redis_storage: Arc<Mutex<RedisStorage>>) -> CreateEvent{
         CreateEvent { 
             interaction: None,
             event_id: None,
@@ -48,9 +49,7 @@ impl ApplicationCommand for CreateEvent {
         let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
         let event_storage = FileStorage::new(&event_file);
 
-        let mut roles = match event_storage.retrieve_json::<Vec<Role>>() {
-            Ok(content) => content,
-            _ => vec![
+        let mut roles = vec![
                 Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
                 Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
@@ -58,8 +57,19 @@ impl ApplicationCommand for CreateEvent {
                 Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
-            ]
-        };
+            ];
+        // let mut roles = match event_storage.retrieve_json::<Vec<Role>>() {
+        //     Ok(content) => content,
+        //     _ => vec![
+        //         Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
+        //         Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+        //         Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+        //         Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+        //         Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+        //         Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+        //         Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
+        //     ]
+        // };
 
         if interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = interaction.data.clone().unwrap_or_default();
@@ -121,7 +131,11 @@ impl ApplicationCommand for CreateEvent {
 
         let s = Arc::clone(&self.redis_storage);
         tokio::spawn(async move {
-            let _ = s.persist_json(&roles).await;
+            let mut locked_s = s.lock().await;
+            locked_s.event_id(event_file);
+            let _ = locked_s.persist_json(&roles).await;
+            let roles : Vec<Role> = locked_s.retrieve_json().await.expect("lol");
+            println!("{:?}", roles);
         });
 
 

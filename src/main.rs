@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
 use registration_bot::interaction_handler::InteractionHandler;
@@ -22,7 +23,7 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<RedisStorage>>) -> Json<InteractionResponse> {
+async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<Mutex<RedisStorage>>>) -> Json<InteractionResponse> {
 
     let mut command_handler = InteractionHandler::new();
     command_handler.add_interaction("create-event", Box::new(CreateEvent::new(Arc::clone(redis_storage.inner()))));
@@ -50,7 +51,7 @@ async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<Re
 
 #[launch]
 fn rocket() -> _ {
-    let redis_storage = Arc::new(RedisStorage::new());
+    let redis_storage = Arc::new(Mutex::new(RedisStorage::new()));
 
     rocket::build()
         .manage(redis_storage)

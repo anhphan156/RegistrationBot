@@ -39,26 +39,45 @@ impl Persistence for RedisStorage {
             return Err(super::PersistenceError::JsonParseFailed);
         }
 
-        // if let None = self.event_id {
-        //     return Err(super::PersistenceError::NoFileName);
-        // }
+        if let None = self.event_id {
+            return Err(super::PersistenceError::NoFileName);
+        }
 
         let roles = roles.unwrap();
-        // let event_id : String = <Option<String> as Clone>::clone(&self.event_id).unwrap_or_default();
-        let event_id = "event1";
+        let event_id : String = <Option<String> as Clone>::clone(&self.event_id).unwrap_or_default();
         if let Ok(mut conn) = self.pool.get().await {
             cmd("SET")
                 .arg(&[format!("reg_bot/{}", event_id), roles])
                 .query_async::<()>(&mut conn)
                 .await.unwrap();
-        } else {
-            return Err(super::PersistenceError::ReadFileFailed); // fix this error to no connection
+
+            return Ok(super::PersistenceResult::Success);
         }
 
-        Ok(super::PersistenceResult::Success)
+        return Err(super::PersistenceError::ReadFileFailed); // fix this error to no connection
     }
 
-    fn retrieve_json<T>(&self) -> Result<T, Self::PersistenceError> where T: serde::de::DeserializeOwned {
-        std::unimplemented!()
+    async fn retrieve_json<T>(&self) -> Result<T, Self::PersistenceError> where T: serde::de::DeserializeOwned {
+        if let None = self.event_id {
+            return Err(super::PersistenceError::NoFileName);
+        }
+
+        let event_id : String = <Option<String> as Clone>::clone(&self.event_id).unwrap_or_default();
+        if let Ok(mut conn) = self.pool.get().await {
+            let content: String = cmd("GET")
+                .arg(&[format!("reg_bot/{}", event_id)])
+                .query_async(&mut conn)
+                .await.unwrap();
+
+            match json::from_str::<T>(&content) {
+                Ok(json) => return Ok(json),
+                Err(e) => {
+                    println!("Retrieve json failed: {}", e);
+                    return Err(super::PersistenceError::JsonParseFailed);
+                }
+            }
+        }
+
+        return Err(super::PersistenceError::ReadFileFailed); // fix this error to no connection
     }
 }

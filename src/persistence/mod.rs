@@ -3,12 +3,14 @@ use serde::{de::DeserializeOwned, Serialize};
 pub mod file_storage;
 pub mod redis_storage;
 
+#[derive(Debug)]
 pub enum PersistenceError {
     JsonParseFailed,
     ReadFileFailed,
     NoFileName,
 }
 
+#[derive(Debug)]
 pub enum PersistenceResult {
     Success,
 }
@@ -22,7 +24,7 @@ pub trait Persistence {
         unimplemented!()
     }
 
-    fn retrieve_json<T>(&self) -> Result<T, Self::PersistenceError> where T: DeserializeOwned {
+    async fn retrieve_json<T>(&self) -> Result<T, Self::PersistenceError> where T: DeserializeOwned + std::marker::Sync {
         unimplemented!()
     }
 }
