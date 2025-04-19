@@ -67,7 +67,7 @@ impl Persistence for RedisStorage {
             let content: String = cmd("GET")
                 .arg(&[format!("reg_bot/{}", event_id)])
                 .query_async(&mut conn)
-                .await.unwrap();
+                .await.unwrap_or_default();
 
             match json::from_str::<T>(&content) {
                 Ok(json) => return Ok(json),

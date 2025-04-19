@@ -35,6 +35,7 @@ impl CreateEvent {
 
 impl InteractionHandle for CreateEvent {}
 
+#[rocket::async_trait]
 impl ApplicationCommand for CreateEvent {
     fn application_command_init(&mut self, interaction: &Interaction) {
         let interaction = interaction.clone();
@@ -44,12 +45,17 @@ impl ApplicationCommand for CreateEvent {
         self.event_id = Some(event_id);
         self.event_time = Some(time.unwrap_or_default());
     }
-    fn application_command_action(&self) -> InteractionResponse {
+    async fn application_command_action(&self) -> InteractionResponse {
         let interaction = self.interaction.as_ref().unwrap();
-        let event_file = format!("/tmp/registration-bot-{}.json", self.event_id.clone().unwrap_or_default());
-        let event_storage = FileStorage::new(&event_file);
 
-        let mut roles = vec![
+        let event_id = self.event_id.clone().unwrap_or_default();
+
+        let mut redis_storage = self.redis_storage.lock().await;
+        redis_storage.event_id(event_id);
+
+        let mut roles = match redis_storage.retrieve_json::<Vec<Role>>().await {
+            Ok(content) => content,
+            _ => vec![
                 Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
                 Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
@@ -57,19 +63,8 @@ impl ApplicationCommand for CreateEvent {
                 Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
                 Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
-            ];
-        // let mut roles = match event_storage.retrieve_json::<Vec<Role>>() {
-        //     Ok(content) => content,
-        //     _ => vec![
-        //         Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
-        //         Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-        //         Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-        //         Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-        //         Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-        //         Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-        //         Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
-        //     ]
-        // };
+            ]
+        };
 
         if interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
             let data = interaction.data.clone().unwrap_or_default();
@@ -84,6 +79,8 @@ impl ApplicationCommand for CreateEvent {
                 player_pick_role(&reacting_member, &button_id, &mut roles);
             }
         };
+
+        let _ = redis_storage.persist_json(&roles).await;
 
         let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
         let unix_timestamp = self.event_time.unwrap_or_default().to_string();
@@ -129,20 +126,11 @@ impl ApplicationCommand for CreateEvent {
             .data(data)
             .build();
 
-        let s = Arc::clone(&self.redis_storage);
-        tokio::spawn(async move {
-            let mut locked_s = s.lock().await;
-            locked_s.event_id(event_file);
-            let _ = locked_s.persist_json(&roles).await;
-            let roles : Vec<Role> = locked_s.retrieve_json().await.expect("lol");
-            println!("{:?}", roles);
-        });
-
-
         return interaction_response;
     }
 }
 
+#[rocket::async_trait]
 impl MessageComponent for CreateEvent {
     fn message_component_init(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata){
         let interaction = interaction.clone();
@@ -153,8 +141,8 @@ impl MessageComponent for CreateEvent {
         self.event_time = Some(time.unwrap_or_default());
     }
 
-    fn message_component_action(&self) -> InteractionResponse {
-        self.application_command_action()
+    async fn message_component_action(&self) -> InteractionResponse {
+        self.application_command_action().await
     }
 }
 

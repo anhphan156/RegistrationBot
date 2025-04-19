@@ -26,14 +26,14 @@ impl InteractionHandler {
         self.application_commands.insert(name, command_object);
     }
 
-    pub fn handle_slash_command(&mut self, interaction: &Interaction) -> InteractionResponse {
+    pub async fn handle_slash_command(&mut self, interaction: &Interaction) -> InteractionResponse {
         let command_name = interaction.get_command_name().unwrap_or_default();
         let command = match self.application_commands.get_mut(command_name) {
             Some(c) => c,
             None => return InteractionResponse::create_message(String::from("Command not found")),
         };
         command.application_command_init(interaction);
-        command.application_command_action()
+        command.application_command_action().await
     }
 
     pub async fn handle_message_component(&mut self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
@@ -46,6 +46,6 @@ impl InteractionHandler {
             None => panic!("Command not found")
         };
         command.message_component_init(&interaction, &parent_interaction);
-        command.message_component_action().edit_message(&interaction).await
+        command.message_component_action().await.edit_message(&interaction).await
     }
 }
