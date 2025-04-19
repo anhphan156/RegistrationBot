@@ -15,30 +15,20 @@ impl<'a> FileStorage<'a> {
     }
 }
 
-pub enum PersistenceError {
-    JsonParseFailed,
-    ReadFileFailed,
-    NoFileName,
-}
-
-pub enum PersistenceResult {
-    Success,
-}
-
 #[rocket::async_trait]
 impl Persistence for FileStorage<'_> {
-    type PersistenceError = PersistenceError;
-    type PersistenceResult = PersistenceResult;
+    type PersistenceError = super::PersistenceError;
+    type PersistenceResult = super::PersistenceResult;
 
-    async fn persist_json<T: Serialize + std::marker::Sync>(&self, data: &T) -> Result<PersistenceResult, PersistenceError> {
+    async fn persist_json<T: Serialize + std::marker::Sync>(&self, data: &T) -> Result<Self::PersistenceResult, Self::PersistenceError> {
         let roles = json::to_string(&data);
         if let Err(e) = roles {
             println!("File persising failed: {}", e);
-            return Err(PersistenceError::JsonParseFailed);
+            return Err(super::PersistenceError::JsonParseFailed);
         }
 
         if let None = self.file_name {
-            return Err(PersistenceError::NoFileName);
+            return Err(super::PersistenceError::NoFileName);
         }
 
         let path = self.file_name.unwrap_or_default();
@@ -46,13 +36,13 @@ impl Persistence for FileStorage<'_> {
             _ => {}
         };
 
-        Ok(PersistenceResult::Success)
+        Ok(super::PersistenceResult::Success)
     }
 
-    fn retrieve_json<T>(&self) -> Result<T, PersistenceError> where T: DeserializeOwned {
+    fn retrieve_json<T>(&self) -> Result<T, super::PersistenceError> where T: DeserializeOwned {
 
         if let None = self.file_name {
-            return Err(PersistenceError::NoFileName);
+            return Err(super::PersistenceError::NoFileName);
         }
 
         let path = self.file_name.unwrap_or_default();
@@ -62,13 +52,13 @@ impl Persistence for FileStorage<'_> {
                     Ok(json) => Ok(json),
                     Err(e) => {
                         println!("Retrieve json failed: {}", e);
-                        return Err(PersistenceError::JsonParseFailed);
+                        return Err(super::PersistenceError::JsonParseFailed);
                     }
                 }
             }
             Err(e) => {
                 println!("Retrieve json failed: {}", e);
-                return Err(PersistenceError::ReadFileFailed);
+                return Err(super::PersistenceError::ReadFileFailed);
             }
         }
     }

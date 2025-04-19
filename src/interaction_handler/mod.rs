@@ -21,6 +21,7 @@ impl InteractionHandler {
             application_commands: HashMap::new(),
         }
     }
+
     pub fn add_interaction(&mut self, name: &'static str, command_object: ApplicationCommandBox) {
         self.application_commands.insert(name, command_object);
     }

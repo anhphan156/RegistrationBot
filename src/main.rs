@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
 use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
@@ -20,10 +22,10 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-async fn interactions<'r>(interaction: Interaction, redis_storage: &State<RedisStorage>) -> Json<InteractionResponse> {
+async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<RedisStorage>>) -> Json<InteractionResponse> {
 
     let mut command_handler = InteractionHandler::new();
-    command_handler.add_interaction("create-event", Box::new(CreateEvent::new()));
+    command_handler.add_interaction("create-event", Box::new(CreateEvent::new(Arc::clone(redis_storage.inner()))));
 
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
@@ -48,7 +50,7 @@ async fn interactions<'r>(interaction: Interaction, redis_storage: &State<RedisS
 
 #[launch]
 fn rocket() -> _ {
-    let redis_storage = RedisStorage::new();
+    let redis_storage = Arc::new(RedisStorage::new());
 
     rocket::build()
         .manage(redis_storage)

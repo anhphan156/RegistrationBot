@@ -1,5 +1,7 @@
 mod role;
 
+use std::sync::Arc;
+
 use role::*;
 use crate::interaction_handler::message_component::MessageComponent;
 use crate::interaction_handler::{ApplicationCommand, InteractionHandle};
@@ -7,6 +9,7 @@ use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::file_storage::FileStorage;
+use crate::persistence::redis_storage::RedisStorage;
 use crate::persistence::Persistence;
 use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
@@ -15,16 +18,21 @@ pub struct CreateEvent {
     interaction: Option<Interaction>,
     event_id: Option<Snowflake>,
     event_time: Option<i64>,
+    redis_storage: Arc<RedisStorage>,
 }
 
 impl CreateEvent {
-    pub fn new() -> CreateEvent{
-        CreateEvent { interaction: None, event_id: None, event_time: None }
+    pub fn new(redis_storage: Arc<RedisStorage>) -> CreateEvent{
+        CreateEvent { 
+            interaction: None,
+            event_id: None,
+            event_time: None ,
+            redis_storage,
+        }
     }
 }
 
 impl InteractionHandle for CreateEvent {}
-
 
 impl ApplicationCommand for CreateEvent {
     fn application_command_init(&mut self, interaction: &Interaction) {
@@ -66,7 +74,6 @@ impl ApplicationCommand for CreateEvent {
                 player_pick_role(&reacting_member, &button_id, &mut roles);
             }
         };
-        let _ = event_storage.persist_json(&roles); // TODO: handle errors
 
         let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
         let unix_timestamp = self.event_time.unwrap_or_default().to_string();
@@ -111,6 +118,12 @@ impl ApplicationCommand for CreateEvent {
             .response_type(4)
             .data(data)
             .build();
+
+        let s = Arc::clone(&self.redis_storage);
+        tokio::spawn(async move {
+            let _ = s.persist_json(&roles).await;
+        });
+
 
         return interaction_response;
     }

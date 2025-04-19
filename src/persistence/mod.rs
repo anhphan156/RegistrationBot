@@ -3,6 +3,16 @@ use serde::{de::DeserializeOwned, Serialize};
 pub mod file_storage;
 pub mod redis_storage;
 
+pub enum PersistenceError {
+    JsonParseFailed,
+    ReadFileFailed,
+    NoFileName,
+}
+
+pub enum PersistenceResult {
+    Success,
+}
+
 #[rocket::async_trait]
 pub trait Persistence {
     type PersistenceError;
