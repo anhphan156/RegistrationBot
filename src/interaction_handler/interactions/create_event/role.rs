@@ -12,7 +12,7 @@ pub fn fetch_role_from_url(url: &str) {
 
 }
 
-pub fn roles_to_embedfields(roles: &Vec<Role>) -> Vec<EmbedField> {
+pub fn roles_to_embedfields(roles: &[Role]) -> Vec<EmbedField> {
     roles.iter().map(|role| EmbedField::new(
         format!("{} {}", role.emoji.clone(), role.name.clone()),
         {

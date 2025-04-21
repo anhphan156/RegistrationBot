@@ -7,9 +7,7 @@ use role::*;
 use crate::interaction_handler::message_component::MessageComponent;
 use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
 use crate::discord::embed::{EmbedField, EmbedImage};
-use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
-use crate::persistence::file_storage::FileStorage;
 use crate::persistence::redis_storage::RedisStorage;
 use crate::persistence::Persistence;
 use crate::utils::snowflake::Snowflake;
@@ -31,57 +29,8 @@ impl CreateEvent {
             redis_storage,
         }
     }
-}
 
-impl InteractionProcessor for CreateEvent {}
-
-#[rocket::async_trait]
-impl ApplicationCommand for CreateEvent {
-    fn application_command_init(&mut self, interaction: &Interaction) {
-        let interaction = interaction.clone();
-        let event_id = interaction.id.clone();
-        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
-        self.interaction = Some(interaction);
-        self.event_id = Some(event_id);
-        self.event_time = Some(time.unwrap_or_default());
-    }
-    async fn application_command_action(&self) -> InteractionResponse {
-        let interaction = self.interaction.as_ref().unwrap();
-
-        let event_id = self.event_id.clone().unwrap_or_default();
-
-        let mut redis_storage = self.redis_storage.lock().await;
-        redis_storage.event_id(event_id);
-
-        let mut roles = match redis_storage.retrieve_json::<Vec<Role>>().await {
-            Ok(content) => content,
-            _ => vec![
-                Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
-                Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-                Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-                Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-                Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-                Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-                Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
-            ]
-        };
-
-        if interaction.interaction_type == InteractionType::MESSAGECOMPONENT {
-            let data = interaction.data.clone().unwrap_or_default();
-            let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
-            let reacting_member = interaction.get_interacted_member();
-
-            if button_id == "Cancel" {
-                player_cancel(&reacting_member, &mut roles);
-            }else if button_id == "Pregear" {
-                println!("pregearing");
-            } else { // roles button
-                player_pick_role(&reacting_member, &button_id, &mut roles);
-            }
-        };
-
-        let _ = redis_storage.persist_json(&roles).await;
-
+    fn generate_event_embed(&self, roles: &[Role]) -> InteractionResponse {
         let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
         let unix_timestamp = self.event_time.unwrap_or_default().to_string();
         let description_embed = Embed::new()
@@ -126,7 +75,40 @@ impl ApplicationCommand for CreateEvent {
             .data(data)
             .build();
 
-        return interaction_response;
+        interaction_response
+    }
+}
+
+impl InteractionProcessor for CreateEvent {}
+
+#[rocket::async_trait]
+impl ApplicationCommand for CreateEvent {
+    fn application_command_init(&mut self, interaction: &Interaction) {
+        let interaction = interaction.clone();
+        let event_id = interaction.id.clone();
+        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string());
+        self.interaction = Some(interaction);
+        self.event_id = Some(event_id);
+        self.event_time = Some(time.unwrap_or_default());
+    }
+    async fn application_command_action(&self) -> InteractionResponse {
+        let event_id = self.event_id.clone().unwrap_or_default();
+        let mut redis_storage = self.redis_storage.lock().await;
+        redis_storage.event_id(event_id);
+
+        let roles = vec![
+            Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
+            Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+            Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+            Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+            Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+            Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
+            Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
+        ];
+
+        let _ = redis_storage.persist_json(&roles).await;
+
+        self.generate_event_embed(&roles)
     }
 }
 
@@ -142,11 +124,39 @@ impl MessageComponent for CreateEvent {
     }
 
     async fn message_component_action(&self) -> InteractionResponse {
-        self.application_command_action().await
+        let interaction = self.interaction.as_ref().unwrap();
+
+        let event_id = self.event_id.clone().unwrap_or_default();
+        let mut redis_storage = self.redis_storage.lock().await;
+        redis_storage.event_id(event_id);
+
+        let mut roles = match redis_storage.retrieve_json::<Vec<Role>>().await {
+            Ok(content) => content,
+            Err(e) => {
+                println!("{:?}", e);
+                return InteractionResponse::create_emphemeral_message(String::from("Event corrupted"));
+            }
+        };
+
+        let data = interaction.data.clone().unwrap_or_default();
+        let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
+        let reacting_member = interaction.get_interacted_member();
+
+        if button_id == "Cancel" {
+            player_cancel(&reacting_member, &mut roles);
+        }else if button_id == "Pregear" {
+            println!("pregearing");
+        } else { // roles button
+            player_pick_role(&reacting_member, &button_id, &mut roles);
+        }
+
+        let _ = redis_storage.persist_json(&roles).await;
+
+        self.generate_event_embed(&roles)
     }
 }
 
-fn generate_buttons(roles: &Vec<Role>) -> Vec<ActionRow> {
+fn generate_buttons(roles: &[Role]) -> Vec<ActionRow> {
     let role_count = roles.len();
     let row_count = role_count / 5 + 1;
     let rows = (0..row_count).map(|row| {

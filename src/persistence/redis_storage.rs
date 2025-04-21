@@ -1,5 +1,4 @@
 use deadpool_redis::{redis::cmd, Pool};
-use reqwest::Client;
 use rocket::serde::json;
 
 use super::Persistence;
@@ -47,7 +46,7 @@ impl Persistence for RedisStorage {
         let event_id : String = <Option<String> as Clone>::clone(&self.event_id).unwrap_or_default();
         if let Ok(mut conn) = self.pool.get().await {
             cmd("SET")
-                .arg(&[format!("reg_bot/{}", event_id), roles])
+                .arg(&[event_id, roles])
                 .query_async::<()>(&mut conn)
                 .await.unwrap();
 
@@ -65,7 +64,7 @@ impl Persistence for RedisStorage {
         let event_id : String = <Option<String> as Clone>::clone(&self.event_id).unwrap_or_default();
         if let Ok(mut conn) = self.pool.get().await {
             let content: String = cmd("GET")
-                .arg(&[format!("reg_bot/{}", event_id)])
+                .arg(&[event_id])
                 .query_async(&mut conn)
                 .await.unwrap_or_default();
 
