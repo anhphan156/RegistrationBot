@@ -3,16 +3,23 @@ use crate::discord::{interaction::Interaction, interaction_response::{IRStatus, 
 use message_component::MessageComponent;
 use application_command::ApplicationCommand;
 
-pub mod message_component;
-pub mod application_command;
 pub mod interactions;
+mod message_component;
+mod application_command;
 
-pub trait InteractionHandle: ApplicationCommand + MessageComponent {}
+pub trait InteractionProcessor: ApplicationCommand + MessageComponent {}
 
-type ApplicationCommandBox = Box<dyn InteractionHandle + Sync + Send>;
+type ApplicationCommandBox = Box<dyn InteractionProcessor + Sync + Send>;
 
 pub struct InteractionHandler {
     application_commands: HashMap<&'static str, ApplicationCommandBox>,
+}
+
+#[macro_export]
+macro_rules! add_interaction {
+    ($handler:expr, $(($name:expr, $interaction:expr)),*) => {
+        $($handler.add_interaction($name, Box::new($interaction));)*
+    };
 }
 
 impl InteractionHandler {

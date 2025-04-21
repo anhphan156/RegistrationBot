@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 use role::*;
 use crate::interaction_handler::message_component::MessageComponent;
-use crate::interaction_handler::{ApplicationCommand, InteractionHandle};
+use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::interaction::InteractionType;
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
@@ -33,7 +33,7 @@ impl CreateEvent {
     }
 }
 
-impl InteractionHandle for CreateEvent {}
+impl InteractionProcessor for CreateEvent {}
 
 #[rocket::async_trait]
 impl ApplicationCommand for CreateEvent {

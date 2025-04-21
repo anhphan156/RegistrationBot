@@ -1,6 +1,6 @@
 use std::sync::Arc;
+use registration_bot::add_interaction;
 use tokio::sync::Mutex;
-
 use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
 use registration_bot::interaction_handler::InteractionHandler;
 use registration_bot::discord::interaction::{Interaction, InteractionType};
@@ -26,7 +26,9 @@ fn index() -> String {
 async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<Mutex<RedisStorage>>>) -> Json<InteractionResponse> {
 
     let mut command_handler = InteractionHandler::new();
-    command_handler.add_interaction("create-event", Box::new(CreateEvent::new(Arc::clone(redis_storage.inner()))));
+    add_interaction!(command_handler, 
+        ("create-event", CreateEvent::new(Arc::clone(redis_storage.inner())))
+    );
 
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
