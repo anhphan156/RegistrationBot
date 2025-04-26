@@ -89,7 +89,6 @@ impl ApplicationCommand for CreateEvent {
         let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string()).unwrap_or_default();
         let event_data = EventDataBuilder::default()
             .event_time(time)
-            .event_roles(vec![])
             .build()
             .unwrap();
         self.interaction = Some(interaction.clone());
@@ -126,7 +125,6 @@ impl MessageComponent for CreateEvent {
 
         let event_data = EventDataBuilder::default()
             .event_time(time)
-            .event_roles(vec![])
             .build()
             .unwrap();
         self.interaction = Some(interaction.clone());
