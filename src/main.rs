@@ -23,7 +23,7 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-async fn interactions<'r>(interaction: Interaction, redis_storage: &State<Arc<Mutex<RedisStorage>>>) -> Json<InteractionResponse> {
+async fn interactions(interaction: Interaction, redis_storage: &State<Arc<Mutex<RedisStorage>>>) -> Json<InteractionResponse> {
 
     let mut command_handler = InteractionHandler::new();
     add_interaction!(command_handler, 
