@@ -1,14 +1,29 @@
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 use crate::utils::snowflake::Snowflake;
 
-#[derive(Builder)]
+use super::role::Role;
+
+#[derive(Builder, Deserialize, Serialize, Default)]
 pub struct EventData {
-    event_id: Snowflake, // &'r str 
     event_time: i64,
+    event_roles: Vec<Role>,
 }
 
 impl EventData {
-    pub fn get_event_id(&self) -> &str {
-        self.event_id.as_ref()
+    pub fn get_time(&self) -> i64 {
+        self.event_time
+    }
+
+    pub fn set_roles(&mut self, roles: &[Role]) {
+        self.event_roles = roles.to_vec();
+    }
+
+    pub fn get_roles(&self) -> &Vec<Role> {
+        self.event_roles.as_ref()
+    }
+
+    pub fn get_roles_mut(&mut self) -> &mut Vec<Role> {
+        self.event_roles.as_mut()
     }
 }

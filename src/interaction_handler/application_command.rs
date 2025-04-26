@@ -6,7 +6,7 @@ pub trait ApplicationCommand {
 
     }
 
-    async fn application_command_action(&self) -> InteractionResponse {
+    async fn application_command_action(&mut self) -> InteractionResponse {
         InteractionResponse::create_message(String::from("Under construction!"))
     }
 }

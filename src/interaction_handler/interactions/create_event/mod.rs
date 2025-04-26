@@ -17,24 +17,24 @@ use crate::utils::timestamp::RegistrationTime;
 
 pub struct CreateEvent {
     interaction: Option<Interaction>,
-    event_time: Option<i64>,
     redis_storage: Arc<Mutex<RedisStorage>>,
     event_data: Option<EventData>,
+    event_id: Option<Snowflake>,
 }
 
 impl CreateEvent {
     pub fn new(redis_storage: Arc<Mutex<RedisStorage>>) -> CreateEvent{
         CreateEvent { 
             interaction: None,
-            event_time: None,
+            event_id: None,
             event_data: None,
             redis_storage,
         }
     }
 
     fn generate_event_embed(&self, roles: &[Role]) -> InteractionResponse {
-        let utc_timestamp = RegistrationTime::unix_to_utc(self.event_time.unwrap_or_default());
-        let unix_timestamp = self.event_time.unwrap_or_default().to_string();
+        let unix_timestamp = self.event_data.as_ref().expect("Event data not found").get_time();
+        let utc_timestamp = RegistrationTime::unix_to_utc(unix_timestamp);
         let description_embed = Embed::new()
             .thumbnail(EmbedImage::new("https://i.imgur.com/EVXo4CB.jpeg"))
             .title("Event title goes here")
@@ -86,21 +86,19 @@ impl InteractionProcessor for CreateEvent {}
 #[rocket::async_trait]
 impl ApplicationCommand for CreateEvent {
     fn application_command_init(&mut self, interaction: &Interaction) {
-        let interaction = interaction.clone();
-        let event_id = interaction.id.clone();
         let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string()).unwrap_or_default();
         let event_data = EventDataBuilder::default()
             .event_time(time)
-            .event_id(event_id)
+            .event_roles(vec![])
             .build()
             .unwrap();
-        self.interaction = Some(interaction);
+        self.interaction = Some(interaction.clone());
         self.event_data = Some(event_data);
+        self.event_id = Some(interaction.id.clone());
     }
-    async fn application_command_action(&self) -> InteractionResponse {
-        let event_data = self.event_data.as_ref().expect("Event data not found in create-event interaction");
-        let event_id = event_data.get_event_id();
-        let mut redis_storage = self.redis_storage.lock().await;
+    async fn application_command_action(&mut self) -> InteractionResponse {
+        let event_data = self.event_data.as_mut().expect("Event data not found in create-event interaction");
+        let redis_storage = self.redis_storage.lock().await;
 
         let roles = vec![
             Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
@@ -111,8 +109,10 @@ impl ApplicationCommand for CreateEvent {
             Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
             Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
         ];
+        event_data.set_roles(&roles);
 
-        let _ = redis_storage.persist_json(&event_id, &roles).await;
+        let event_id = self.event_id.as_ref().map_or("", |x| x);
+        let _ = redis_storage.persist_json(&event_id, &event_data).await;
 
         self.generate_event_embed(&roles)
     }
@@ -121,28 +121,26 @@ impl ApplicationCommand for CreateEvent {
 #[rocket::async_trait]
 impl MessageComponent for CreateEvent {
     fn message_component_init(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata){
-        let interaction = interaction.clone();
         let event_id = parent_interaction.id.clone().unwrap_or_default();
         let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string()).unwrap_or_default();
 
         let event_data = EventDataBuilder::default()
             .event_time(time)
-            .event_id(event_id)
+            .event_roles(vec![])
             .build()
             .unwrap();
-        self.interaction = Some(interaction);
+        self.interaction = Some(interaction.clone());
         self.event_data = Some(event_data);
+        self.event_id = Some(event_id);
     }
 
-    async fn message_component_action(&self) -> InteractionResponse {
+    async fn message_component_action(&mut self) -> InteractionResponse {
         let interaction = self.interaction.as_ref().unwrap();
+        let redis_storage = self.redis_storage.lock().await;
 
-        let event_data = self.event_data.as_ref().expect("Event data not found in create-event interaction");
-        let event_id = event_data.get_event_id();
-        let mut redis_storage = self.redis_storage.lock().await;
-
-        let mut roles = match redis_storage.retrieve_json::<Vec<Role>>(&event_id).await {
-            Ok(content) => content,
+        let event_id = self.event_id.as_ref().map_or("", |x| x);
+        let mut event_data = match redis_storage.retrieve_json::<EventData>(&event_id).await {
+            Ok(ed) => ed,
             Err(e) => {
                 println!("{:?}", e);
                 return InteractionResponse::create_emphemeral_message(String::from("Event corrupted"));
@@ -154,16 +152,16 @@ impl MessageComponent for CreateEvent {
         let reacting_member = interaction.get_interacted_member();
 
         if button_id == "Cancel" {
-            player_cancel(&reacting_member, &mut roles);
+            player_cancel(&reacting_member, event_data.get_roles_mut());
         }else if button_id == "Pregear" {
             println!("pregearing");
         } else { // roles button
-            player_pick_role(&reacting_member, &button_id, &mut roles);
+            player_pick_role(&reacting_member, &button_id, event_data.get_roles_mut());
         }
 
-        let _ = redis_storage.persist_json(&event_id, &roles).await;
+        let _ = redis_storage.persist_json(&event_id, &event_data).await;
 
-        self.generate_event_embed(&roles)
+        self.generate_event_embed(event_data.get_roles())
     }
 }
 

@@ -44,15 +44,24 @@ impl InteractionHandler {
     }
 
     pub async fn handle_message_component(&mut self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
-        let message = interaction.message.clone().unwrap_or_default();
-        let parent_interaction = message.parent_interaction.unwrap_or_default();
+        let message = match interaction.message.as_ref() {
+            Some(msg) => msg,
+            None => return Err(IRStatus::PatchFailed),
+        };
+
+        let parent_interaction = match message.parent_interaction.as_ref() {
+            Some(pi) => pi,
+            None => return Err(IRStatus::PatchFailed),
+        };
+
 
         let command_name = interaction.get_command_name().unwrap_or_default();
         let command = match self.application_commands.get_mut(command_name) {
             Some(c) => c,
-            None => panic!("Command not found")
+            None => return Err(IRStatus::PatchFailed),
         };
-        command.message_component_init(&interaction, &parent_interaction);
+
+        command.message_component_init(interaction, parent_interaction);
         command.message_component_action().await.edit_message(&interaction).await
     }
 }

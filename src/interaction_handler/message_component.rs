@@ -6,7 +6,7 @@ pub trait MessageComponent {
 
     }
 
-    async fn message_component_action(&self) -> InteractionResponse {
+    async fn message_component_action(&mut self) -> InteractionResponse {
         InteractionResponse::create_message(String::from("Under construction!"))
     }
 }
