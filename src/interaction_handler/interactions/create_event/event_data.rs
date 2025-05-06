@@ -6,6 +6,7 @@ use super::role::Role;
 
 #[derive(Builder, Deserialize, Serialize, Default)]
 pub struct EventData {
+    #[builder(default = "0")]
     event_time: i64,
 
     #[builder(default = "vec![]")]

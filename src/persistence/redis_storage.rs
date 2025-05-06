@@ -1,8 +1,6 @@
 use deadpool_redis::{redis::cmd, Pool};
 use rocket::serde::json;
 
-use super::Persistence;
-
 pub struct RedisStorage {
     pool: Pool
 }

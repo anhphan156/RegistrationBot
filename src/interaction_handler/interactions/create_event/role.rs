@@ -4,12 +4,25 @@ use crate::discord::embed::EmbedField;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Role {
     pub name: String,
+    #[serde(default)]
     pub players: Vec<String>,
     pub emoji: String,
 }
 
-pub fn fetch_role_from_url(url: &str) {
+pub async fn fetch_role_from_url(url: &str) -> Result<Vec<Role>, Box<dyn std::error::Error>> {
 
+    use rocket::serde::json;
+
+    let text : String = reqwest::get(url).await?.text().await?.into();
+    let roles : Vec<Role> = match json::from_str(&text) {
+        Ok(r) => r,
+        Err(e) => {
+            println!("{}", e);
+            return Err(Box::new(e));
+        },
+    };
+
+    Ok(roles)
 }
 
 pub fn roles_to_embedfields(roles: &[Role]) -> Vec<EmbedField> {

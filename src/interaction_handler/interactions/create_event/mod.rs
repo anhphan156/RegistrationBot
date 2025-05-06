@@ -11,7 +11,6 @@ use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
 use crate::discord::embed::{EmbedField, EmbedImage};
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
-use crate::persistence::Persistence;
 use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
@@ -32,7 +31,8 @@ impl CreateEvent {
         }
     }
 
-    fn generate_event_embed(&self, roles: &[Role]) -> InteractionResponse {
+    fn generate_event_embed(&self) -> InteractionResponse {
+        let roles = self.event_data.as_ref().expect("Event data not found").get_roles();
         let unix_timestamp = self.event_data.as_ref().expect("Event data not found").get_time();
         let utc_timestamp = RegistrationTime::unix_to_utc(unix_timestamp);
         let description_embed = Embed::new()
@@ -86,11 +86,12 @@ impl InteractionProcessor for CreateEvent {}
 #[rocket::async_trait]
 impl ApplicationCommand for CreateEvent {
     fn application_command_init(&mut self, interaction: &Interaction) {
-        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string()).unwrap_or_default();
+        let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
         let event_data = EventDataBuilder::default()
             .event_time(time)
             .build()
             .unwrap();
+
         self.interaction = Some(interaction.clone());
         self.event_data = Some(event_data);
         self.event_id = Some(interaction.id.clone());
@@ -99,21 +100,19 @@ impl ApplicationCommand for CreateEvent {
         let event_data = self.event_data.as_mut().expect("Event data not found in create-event interaction");
         let redis_storage = self.redis_storage.lock().await;
 
-        let roles = vec![
-            Role { name: "Tank".to_string(), players: vec![], emoji: String::from( "🤣")},
-            Role { name: "DPS 1".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-            Role { name: "DPS 2".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-            Role { name: "DPS 3".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-            Role { name: "DPS 4".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-            Role { name: "DPS 5".to_string(), players: vec![], emoji: String::from( "Ⓜ️")},
-            Role { name: "Healer".to_string(), players: vec![], emoji: String::from( "😴")},
-        ];
+        let roles = match fetch_role_from_url("https://pastebin.com/raw/GGMCaLFT").await {
+            Ok(r) => r,
+            Err(e) => {
+                println!("{}", e);
+                return InteractionResponse::create_emphemeral_message(format!("Failed to fetch role: {}", e));
+            }
+        };
         event_data.set_roles(&roles);
 
         let event_id = self.event_id.as_ref().map_or("", |x| x);
         let _ = redis_storage.persist_json(&event_id, &event_data).await;
 
-        self.generate_event_embed(&roles)
+        self.generate_event_embed()
     }
 }
 
@@ -121,14 +120,9 @@ impl ApplicationCommand for CreateEvent {
 impl MessageComponent for CreateEvent {
     fn message_component_init(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata){
         let event_id = parent_interaction.id.clone().unwrap_or_default();
-        let time = RegistrationTime::utc_to_unix("3/25/2025 10:00 am".to_string()).unwrap_or_default();
 
-        let event_data = EventDataBuilder::default()
-            .event_time(time)
-            .build()
-            .unwrap();
         self.interaction = Some(interaction.clone());
-        self.event_data = Some(event_data);
+        self.event_data = None;
         self.event_id = Some(event_id);
     }
 
@@ -158,8 +152,9 @@ impl MessageComponent for CreateEvent {
         }
 
         let _ = redis_storage.persist_json(&event_id, &event_data).await;
+        self.event_data = Some(event_data);
 
-        self.generate_event_embed(event_data.get_roles())
+        self.generate_event_embed()
     }
 }
 
