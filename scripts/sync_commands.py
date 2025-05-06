@@ -22,6 +22,12 @@ def main():
                     'name': 'time',
                     'description': 'UTC time for event',
                     'required': True
+                },
+                {
+                    'type': 3,
+                    'name': 'template',
+                    'description': 'Role template for event',
+                    'required': True
                 }
             ]
         }

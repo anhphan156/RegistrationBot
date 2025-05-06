@@ -47,6 +47,26 @@ impl Interaction {
 
         interacted_member
     }
+
+    pub fn get_string_option_value_by_name(&self, name: &str) -> Option<String> {
+
+        let option = match self.data.as_ref()
+            .and_then(|x| x.options.as_ref())
+            .map(|options| options.iter().find(|x| x.name.clone().unwrap_or_default() == name))
+            .flatten() {
+                Some(o) => o,
+                None => return None,
+            };
+
+        let value_json = match &option.value {
+            Some(v) => v,
+            None => return None,
+        };
+
+        let value : String = json::from_value(value_json.clone()).unwrap_or_default();
+
+        Some(value)
+    }
 }
 
 #[derive(Debug)]

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 
-use role::*;
+use role::Role;
 use crate::interaction_handler::message_component::MessageComponent;
 use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
 use crate::discord::embed::{EmbedField, EmbedImage};
@@ -45,7 +45,7 @@ impl CreateEvent {
             .build();
             
         let roles_embed = Embed::new() 
-            .fields(roles_to_embedfields(&roles))
+            .fields(Role::roles_to_embedfields(&roles))
             .build();
 
         let picture_embed = Embed::new()
@@ -100,7 +100,11 @@ impl ApplicationCommand for CreateEvent {
         let event_data = self.event_data.as_mut().expect("Event data not found in create-event interaction");
         let redis_storage = self.redis_storage.lock().await;
 
-        let roles = match fetch_role_from_url("https://pastebin.com/raw/GGMCaLFT").await {
+        let roles_template_url = match self.interaction.as_ref().expect("Interaction not found").get_string_option_value_by_name("template") {
+            Some(url) => url,
+            None => return InteractionResponse::create_emphemeral_message(String::from("Failed to parse url from interaction")),
+        };
+        let roles = match Role::fetch_role_from_url(&roles_template_url).await {
             Ok(r) => r,
             Err(e) => {
                 println!("{}", e);

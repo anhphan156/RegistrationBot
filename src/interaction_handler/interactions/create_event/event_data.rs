@@ -1,6 +1,5 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use crate::utils::snowflake::Snowflake;
 
 use super::role::Role;
 
