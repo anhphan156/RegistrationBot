@@ -1,6 +1,7 @@
 mod role;
 mod event_data;
 
+use std::collections::HashSet;
 use std::sync::Arc;
 use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
@@ -8,7 +9,7 @@ use tokio::sync::Mutex;
 use role::Role;
 use crate::interaction_handler::message_component::MessageComponent;
 use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
-use crate::discord::embed::{EmbedField, EmbedImage};
+use crate::discord::embed::{EmbedField, EmbedFooter, EmbedFooterBuilder, EmbedImage};
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
 use crate::utils::snowflake::Snowflake;
@@ -35,22 +36,27 @@ impl CreateEvent {
         let roles = self.event_data.as_ref().expect("Event data not found").get_roles();
         let unix_timestamp = self.event_data.as_ref().expect("Event data not found").get_time();
         let utc_timestamp = RegistrationTime::unix_to_utc(unix_timestamp);
+
+        let mut description_fields = vec![
+            EmbedField::new("Event Info:", format!("📅 Local time: <t:{unix_timestamp}:F>\n📅 UTC time: {utc_timestamp}\n⏰ In : <t:{unix_timestamp}:R>"), false),
+            EmbedField::new("Description:", "description goes here", false),
+        ];
+        description_fields.append(&mut Role::roles_to_embedfields(&roles));
+
         let description_embed = Embed::new()
             .thumbnail(EmbedImage::new("https://i.imgur.com/EVXo4CB.jpeg"))
             .title("Event title goes here")
-            .fields(vec![
-                EmbedField::new("Event Info:", format!("📅 Local time: <t:{unix_timestamp}:F>\n📅 UTC time: {utc_timestamp}\n⏰ In : <t:{unix_timestamp}:R>"), false),
-                EmbedField::new("Description:", "description goes here", false),
-            ])
+            .fields(description_fields)
             .build();
             
-        let roles_embed = Embed::new() 
-            .fields(Role::roles_to_embedfields(&roles))
-            .build();
+        // let roles_embed = Embed::new() 
+        //     .fields(Role::roles_to_embedfields(&roles))
+        //     .build();
 
         let picture_embed = Embed::new()
             // .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg")) // dev
             .image(EmbedImage::new("https://i.imgur.com/RiB0TBM.jpeg")) // presentation
+            .footer(EmbedFooterBuilder::default().text(format!("Unique Signups: {}", unique_signups(&roles))).build().unwrap())
             .build();
 
         let mut rows = generate_buttons(&roles);
@@ -68,7 +74,8 @@ impl CreateEvent {
         ]);
 
         let data = InteractionCallbackData::new() 
-            .embeds(vec![ description_embed, roles_embed, picture_embed ])
+            // .embeds(vec![ description_embed, roles_embed, picture_embed ])
+            .embeds(vec![ description_embed, picture_embed ])
             .action_rows(rows)
             .build();
 
@@ -194,4 +201,12 @@ fn player_pick_role(player: &str, role_id: &str, roles: &mut Vec<Role>) {
             roles[i].players.push(String::from(player));
         }
     };
+}
+
+fn unique_signups(roles: &Vec<Role>) -> usize {
+    roles
+        .iter()
+        .flat_map(|x| x.players.iter())
+        .collect::<HashSet<_>>()
+        .len()
 }

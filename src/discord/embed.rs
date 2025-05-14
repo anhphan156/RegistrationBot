@@ -11,6 +11,7 @@ pub struct Embed {
     image: Option<EmbedImage>,
     thumbnail: Option<EmbedImage>,
     fields: Option<Vec<EmbedField>>,
+    footer: Option<EmbedFooter>,
 }
 
 impl Embed {
@@ -24,6 +25,7 @@ impl Embed {
             image: None,
             thumbnail: None,
             fields: None,
+            footer: None,
         }
     }
 }
@@ -37,6 +39,7 @@ pub struct EmbedBuilder {
     image: Option<EmbedImage>,
     thumbnail: Option<EmbedImage>,
     fields: Option<Vec<EmbedField>>,
+    footer: Option<EmbedFooter>,
 }
 
 impl EmbedBuilder {
@@ -72,6 +75,10 @@ impl EmbedBuilder {
         self.fields = Some(fields);
         self
     }
+    pub fn footer(&mut self, footer: EmbedFooter) -> &mut Self {
+        self.footer = Some(footer);
+        self
+    }
 
     pub fn build(&self) -> Embed {
         Embed {
@@ -82,7 +89,8 @@ impl EmbedBuilder {
             color: self.color,
             image: self.image.clone(),
             thumbnail: self.thumbnail.clone(),
-            fields: self.fields.clone()
+            fields: self.fields.clone(),
+            footer: self.footer.clone(),
         }
     }
 }
@@ -99,6 +107,7 @@ impl Default for Embed {
             image: None,
             thumbnail: None,
             fields: None,
+            footer: None,
         }
     }
 }
@@ -129,4 +138,12 @@ impl EmbedField {
             inline,
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, derive_builder::Builder)]
+pub struct EmbedFooter {
+    text: String,
+    
+    // #[builder(default = "None")]
+    // icon_url: Option<String>,
 }
