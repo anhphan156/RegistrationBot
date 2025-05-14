@@ -33,6 +33,7 @@ async fn interactions(interaction: Interaction, redis_storage: &State<Arc<Mutex<
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
         InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_slash_command(&interaction).await),
+        InteractionType::MODALSUBMIT => return Json(command_handler.handle_modal_submit(&interaction).await),       
         InteractionType::MESSAGECOMPONENT => {
             tokio::spawn(async move {
                 let status = command_handler.handle_message_component(&interaction).await;

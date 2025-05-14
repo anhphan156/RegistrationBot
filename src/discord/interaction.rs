@@ -22,6 +22,8 @@ impl Interaction {
         if let Some(data) = &self.data {
             if data.name.is_some() {
                 return data.name.as_deref();
+            } else if data.custom_id.is_some() {
+                return data.custom_id.as_deref();
             }
         }
 
@@ -66,6 +68,13 @@ impl Interaction {
         let value : String = json::from_value(value_json.clone()).unwrap_or_default();
 
         Some(value)
+    }
+
+    pub fn get_modal_value_by_id(&self, custom_id: &str) -> Option<String> {
+        self.data.as_ref()
+            .and_then(|x| x.components.as_ref())
+            .map(|x| x.it)
+        None
     }
 }
 
@@ -121,6 +130,7 @@ pub struct InteractionData {
     pub name: Option<String>,
     pub custom_id: Option<String>,
     pub options: Option<Vec<CommandOption>>,
+    components: Option<super::interaction_response::ActionRow>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]

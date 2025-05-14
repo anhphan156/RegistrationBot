@@ -7,7 +7,8 @@ use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 
 use role::Role;
-use crate::interaction_handler::message_component::MessageComponent;
+use crate::interaction_handler::interaction_types::message_component::MessageComponent;
+use crate::interaction_handler::interaction_types::modal_submit::ModalSubmit;
 use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
 use crate::discord::embed::{EmbedField, EmbedFooter, EmbedFooterBuilder, EmbedImage};
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
@@ -91,8 +92,8 @@ impl CreateEvent {
 impl InteractionProcessor for CreateEvent {}
 
 #[rocket::async_trait]
-impl ApplicationCommand for CreateEvent {
-    fn application_command_init(&mut self, interaction: &Interaction) {
+impl ModalSubmit for CreateEvent {
+    fn modal_submit_init(&mut self, interaction: &Interaction){
         let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
         let event_data = EventDataBuilder::default()
             .event_time(time)
@@ -103,7 +104,8 @@ impl ApplicationCommand for CreateEvent {
         self.event_data = Some(event_data);
         self.event_id = Some(interaction.id.clone());
     }
-    async fn application_command_action(&mut self) -> InteractionResponse {
+
+    async fn modal_submit_action(&mut self) -> InteractionResponse {
         let event_data = self.event_data.as_mut().expect("Event data not found in create-event interaction");
         let redis_storage = self.redis_storage.lock().await;
 
@@ -124,6 +126,36 @@ impl ApplicationCommand for CreateEvent {
         let _ = redis_storage.persist_json(&event_id, &event_data).await;
 
         self.generate_event_embed()
+    }
+}
+
+#[rocket::async_trait]
+impl ApplicationCommand for CreateEvent {
+    fn application_command_init(&mut self, interaction: &Interaction) {
+        self.interaction = Some(interaction.clone());
+    }
+    async fn application_command_action(&mut self) -> InteractionResponse {
+        let rows = vec![ 
+            ActionRow::new(vec![ 
+                Component::new(4, 1)
+                    .label(String::from("Template"))
+                    .custom_id(String::from("template"))
+                    .build()
+            ])
+        ];
+
+        let data = InteractionCallbackData::new() 
+            .action_rows(rows)
+            .custom_id("create-event")
+            .title("Create Event")
+            .build();
+
+        let interaction_response = InteractionResponse::new()
+            .response_type(9)
+            .data(data)
+            .build();
+
+        interaction_response
     }
 }
 

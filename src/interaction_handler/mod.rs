@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use crate::discord::{interaction::Interaction, interaction_response::{IRStatus, InteractionResponse}};
-use message_component::MessageComponent;
-use application_command::ApplicationCommand;
+use interaction_types::message_component::MessageComponent;
+use interaction_types::application_command::ApplicationCommand;
+use interaction_types::modal_submit::ModalSubmit;
 
 pub mod interactions;
-mod message_component;
-mod application_command;
+mod interaction_types;
 
-pub trait InteractionProcessor: ApplicationCommand + MessageComponent {}
+pub trait InteractionProcessor: ApplicationCommand + MessageComponent + ModalSubmit {}
 
 type ApplicationCommandBox = Box<dyn InteractionProcessor + Sync + Send>;
 
@@ -41,6 +41,16 @@ impl InteractionHandler {
         };
         command.application_command_init(interaction);
         command.application_command_action().await
+    }
+
+    pub async fn handle_modal_submit(&mut self, interaction: &Interaction) -> InteractionResponse {
+        let command_name = interaction.get_command_name().unwrap_or_default();
+        let command = match self.application_commands.get_mut(command_name) {
+            Some(c) => c,
+            None => return InteractionResponse::create_message(String::from("Command not found")),
+        };
+        command.modal_submit_init(interaction);
+        command.modal_submit_action().await
     }
 
     pub async fn handle_message_component(&mut self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {

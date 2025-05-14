@@ -141,6 +141,8 @@ pub struct InteractionCallbackData {
     flags: Option<u16>,
     #[serde(rename = "components")]
     action_rows: Option<Vec<ActionRow>>,
+    title: Option<String>,
+    custom_id: Option<String>,
 }
 
 impl InteractionCallbackData {
@@ -150,6 +152,8 @@ impl InteractionCallbackData {
             embeds: None,
             flags: None,
             action_rows: None,
+            title: None,
+            custom_id: None,
         }
     }
 }
@@ -159,6 +163,8 @@ pub struct InteractionCallbackDataBuilder {
     embeds: Option<Vec<Embed>>,
     flags: Option<u16>,
     action_rows: Option<Vec<ActionRow>>,
+    title: Option<String>,
+    custom_id: Option<String>,
 }
 
 impl InteractionCallbackDataBuilder {
@@ -178,12 +184,22 @@ impl InteractionCallbackDataBuilder {
         self.action_rows = Some(action_rows);
         self
     }
+    pub fn title(&mut self, title: impl Into<String>) -> &mut Self {
+        self.title = Some(title.into());
+        self
+    }
+    pub fn custom_id(&mut self, custom_id: impl Into<String>) -> &mut Self {
+        self.custom_id = Some(custom_id.into());
+        self
+    }
     pub fn build(&self) -> InteractionCallbackData {
         InteractionCallbackData {
             content: self.content.clone(),
             embeds: self.embeds.clone(),
             flags: self.flags,
-            action_rows: self.action_rows.clone()
+            action_rows: self.action_rows.clone(),
+            custom_id: self.custom_id.clone(),
+            title: self.title.clone(),
         }
     }
 }
@@ -195,11 +211,13 @@ impl Default for InteractionCallbackData {
             flags: None,
             embeds: None,
             action_rows: None,
+            title: None,
+            custom_id: None,
         }
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ActionRow {
     #[serde(rename = "type")]
     component_type: u8,
@@ -215,7 +233,7 @@ impl ActionRow {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Component {
     #[serde(rename = "type")]
     component_type: u8,

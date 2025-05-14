@@ -2,6 +2,8 @@ import json
 import os
 import requests
 
+# https://discord.com/developers/docs/interactions/application-commands
+
 def main():
     url = 'https://discord.com/api/v10/applications/' + os.environ.get('APP_ID') + '/commands'
     headers = {
