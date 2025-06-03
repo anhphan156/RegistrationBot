@@ -27,6 +27,11 @@ def main():
                     'type': 3,
                     'name': 'template',
                     'description': 'Role template for event',
+                    'choices': [
+                        {'name':'template3', 'value': 'https://pastebin.com/raw/1uMpGQNn'},
+                        {'name':'template5', 'value': 'https://pastebin.com/raw/qcTsm6AC'}
+
+                    ],
                     'required': True
                 }
             ]

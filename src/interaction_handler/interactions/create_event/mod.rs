@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 use role::Role;
 use crate::interaction_handler::message_component::MessageComponent;
 use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
-use crate::discord::embed::{EmbedField, EmbedFooter, EmbedFooterBuilder, EmbedImage};
+use crate::discord::embed::{EmbedField, EmbedFooterBuilder, EmbedImage};
 use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
 use crate::utils::snowflake::Snowflake;
@@ -114,8 +114,8 @@ impl ApplicationCommand for CreateEvent {
         let roles = match Role::fetch_role_from_url(&roles_template_url).await {
             Ok(r) => r,
             Err(e) => {
-                println!("{}", e);
-                return InteractionResponse::create_emphemeral_message(format!("Failed to fetch role: {}", e));
+                println!("File: {} - Line: {} - {}", file!(), line!(), e);
+                return InteractionResponse::create_emphemeral_message(format!("Failed to fetch role template: {}", e));
             }
         };
         event_data.set_roles(&roles);
@@ -171,9 +171,9 @@ impl MessageComponent for CreateEvent {
 
 fn generate_buttons(roles: &[Role]) -> Vec<ActionRow> {
     let role_count = roles.len();
-    let row_count = role_count / 5 + 1;
+    crate::log!(let row_count = role_count / 5 + 1;);
     let rows = (0..row_count).map(|row| {
-        let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
+        crate::log!(let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };);
         let components = (0..button_count).map(|button| {
             let role_index = usize::min(role_count - 1, row * 5 + button);
             Component::new(2, 1)
@@ -184,7 +184,7 @@ fn generate_buttons(roles: &[Role]) -> Vec<ActionRow> {
         }).collect();
 
         ActionRow::new(components)
-    });
+    }).take(if role_count % 5 == 0 {row_count - 1} else {row_count});
 
     rows.collect()
 }
