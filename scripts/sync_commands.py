@@ -9,39 +9,19 @@ def main():
         'Content-Type': 'application/json; charset=UTF-8',
         'User-Agent': 'Registration Bot'
     }
-    commands =  [
-        {
-            'name': 'create-event',
-            'description': 'Basic command',
-            'type': 1,
-            'integration_types': [0, 1],
-            'contexts': [0, 1, 2],
-            'options': [
-                {
-                    'type': 3,
-                    'name': 'time',
-                    'description': 'UTC time for event',
-                    'required': True
-                },
-                {
-                    'type': 3,
-                    'name': 'template',
-                    'description': 'Role template for event',
-                    'choices': [
-                        {'name':'template3', 'value': 'https://pastebin.com/raw/1uMpGQNn'},
-                        {'name':'template5', 'value': 'https://pastebin.com/raw/qcTsm6AC'}
 
-                    ],
-                    'required': True
-                }
-            ]
-        }
-    ];
+    commands = []
+
+    for filename in os.listdir('./commands'):
+        if filename.endswith('.json'):
+            path = os.path.join('./commands/', filename)
+
+            with open(path, 'r', encoding='utf=8') as f:
+                command = json.load(f)
+                commands.append(command)
 
     res = requests.put(url, json=commands, headers=headers)
     print(res.json())
-
-
 
 if __name__=="__main__":
     main()

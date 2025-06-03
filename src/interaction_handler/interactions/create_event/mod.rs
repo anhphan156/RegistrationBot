@@ -63,6 +63,14 @@ impl CreateEvent {
         rows.append(&mut vec![ 
             ActionRow::new(vec![ 
                 Component::new(2, 1)
+                    .label(String::from("Pregear"))
+                    .custom_id(String::from("Pregear"))
+                    .emoji(Emoji {
+                        id: None,
+                        name: Some(String::from("👍"))
+                    })
+                    .build(),
+                Component::new(2, 1)
                     .label(String::from("Cancel"))
                     .custom_id(String::from("Cancel"))
                     .emoji(Emoji {
@@ -114,7 +122,7 @@ impl ApplicationCommand for CreateEvent {
         let roles = match Role::fetch_role_from_url(&roles_template_url).await {
             Ok(r) => r,
             Err(e) => {
-                println!("File: {} - Line: {} - {}", file!(), line!(), e);
+                crate::log_expression!(e);
                 return InteractionResponse::create_emphemeral_message(format!("Failed to fetch role template: {}", e));
             }
         };
@@ -150,16 +158,12 @@ impl MessageComponent for CreateEvent {
             }
         };
 
-        let data = interaction.data.clone().unwrap_or_default();
-        let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
         let reacting_member = interaction.get_interacted_member().unwrap_or(String::from("Interacted user not found"));
-
-        if button_id == "Cancel" {
-            player_cancel(&reacting_member, event_data.get_roles_mut());
-        }else if button_id == "Pregear" {
-            println!("pregearing");
-        } else { // roles button
-            player_pick_role(&reacting_member, &button_id, event_data.get_roles_mut());
+        match interaction.get_button_id() {
+            Some("Cancel") => player_cancel(&reacting_member, event_data.get_roles_mut()),
+            Some("Pregear") => {crate::log_expression!("pregearing");},
+            Some(id) => player_pick_role(&reacting_member, id, event_data.get_roles_mut()),
+            None => {crate::log_expression!("unknown button");}
         }
 
         let _ = redis_storage.persist_json(&event_id, &event_data).await;
@@ -171,9 +175,9 @@ impl MessageComponent for CreateEvent {
 
 fn generate_buttons(roles: &[Role]) -> Vec<ActionRow> {
     let role_count = roles.len();
-    crate::log!(let row_count = role_count / 5 + 1;);
+    let row_count = role_count / 5 + 1;
     let rows = (0..row_count).map(|row| {
-        crate::log!(let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };);
+        let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
         let components = (0..button_count).map(|button| {
             let role_index = usize::min(role_count - 1, row * 5 + button);
             Component::new(2, 1)

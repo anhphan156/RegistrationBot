@@ -62,6 +62,10 @@ impl Interaction {
 
         Some(value)
     }
+
+    pub fn get_button_id(&self) -> Option<&str> {
+        self.data.as_ref().and_then(|x| x.custom_id.as_ref().map(|y| y.as_str()))
+    }
 }
 
 #[derive(Debug)]
