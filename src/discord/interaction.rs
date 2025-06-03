@@ -35,24 +35,19 @@ impl Interaction {
         None
     }
 
-    pub fn get_interacted_member(&self) -> String {
-        let mut interacted_member = self.member.as_ref().map(|x| x.nick.clone()).unwrap_or_default().unwrap_or_default();
-        if interacted_member.is_empty() {
-            let user = &self.user;
-            interacted_member = match user {
-                Some(u) => u.username.clone(),
-                None => String::from("Username not found")
-            };
+    pub fn get_interacted_member(&self) -> Option<String> {
+        let mut interacted_member = self.member.as_ref().map(|x| x.nick.clone()).flatten();
+        if interacted_member.is_none() {
+            interacted_member = self.user.as_ref().map(|x| x.username.clone());
         }
 
         interacted_member
     }
 
     pub fn get_string_option_value_by_name(&self, name: &str) -> Option<String> {
-
         let option = match self.data.as_ref()
             .and_then(|x| x.options.as_ref())
-            .map(|options| options.iter().find(|x| x.name.clone().unwrap_or_default() == name))
+            .map(|options| options.iter().find(|x| x.name.as_ref().map(|y| y.as_str()) == Some(name)))
             .flatten() {
                 Some(o) => o,
                 None => return None,

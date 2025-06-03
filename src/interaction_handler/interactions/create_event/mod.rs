@@ -152,7 +152,7 @@ impl MessageComponent for CreateEvent {
 
         let data = interaction.data.clone().unwrap_or_default();
         let button_id : String = data.custom_id.unwrap_or_default().try_into().expect("");
-        let reacting_member = interaction.get_interacted_member();
+        let reacting_member = interaction.get_interacted_member().unwrap_or(String::from("Interacted user not found"));
 
         if button_id == "Cancel" {
             player_cancel(&reacting_member, event_data.get_roles_mut());
