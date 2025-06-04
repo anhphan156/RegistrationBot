@@ -1,12 +1,16 @@
+mod discord;
+mod interaction_handler;
+mod utils;
+mod persistence;
+
+use std::collections::HashMap;
 use std::sync::Arc;
-use registration_bot::add_interaction;
 use tokio::sync::Mutex;
-use registration_bot::interaction_handler::interactions::create_event::CreateEvent;
-use registration_bot::interaction_handler::InteractionHandler;
-use registration_bot::discord::interaction::{Interaction, InteractionType};
-use registration_bot::discord::interaction_response::InteractionResponse;
-use registration_bot::persistence::redis_storage::RedisStorage;
-use registration_bot::utils::timestamp::RegistrationTime;
+use interaction_handler::{CommandMap, ApplicationCommandBox, InteractionHandler, interactions::create_event::CreateEvent};
+use discord::interaction::{Interaction, InteractionType};
+use discord::interaction_response::InteractionResponse;
+use persistence::redis_storage::RedisStorage;
+use utils::timestamp::RegistrationTime;
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -23,19 +27,16 @@ fn index() -> String {
 }
 
 #[post("/interactions", data = "<interaction>")]
-async fn interactions(interaction: Interaction, redis_storage: &State<Arc<Mutex<RedisStorage>>>) -> Json<InteractionResponse> {
+async fn interactions(interaction: Interaction, command_map: &State<Arc<CommandMap>>) -> Json<InteractionResponse> {
 
-    let mut command_handler = InteractionHandler::new();
-    add_interaction!(command_handler, 
-        ("create-event", CreateEvent::new(Arc::clone(redis_storage.inner())))
-    );
+    let mut interaction_handler = InteractionHandler::new(command_map.inner().clone());
 
     match interaction.interaction_type {
         InteractionType::PING => return Json(InteractionResponse::pong()),
-        InteractionType::APPLICATIONCOMMAND => return Json(command_handler.handle_slash_command(&interaction).await),
+        InteractionType::APPLICATIONCOMMAND => return Json(interaction_handler.handle_slash_command(&interaction).await),
         InteractionType::MESSAGECOMPONENT => {
             tokio::spawn(async move {
-                let status = command_handler.handle_message_component(&interaction).await;
+                let status = interaction_handler.handle_message_component(&interaction).await;
                 match status {
                     Ok(s) => println!("Message component handler: {:?}", s),
                     Err(s) => {
@@ -55,8 +56,11 @@ async fn interactions(interaction: Interaction, redis_storage: &State<Arc<Mutex<
 fn rocket() -> _ {
     let redis_storage = Arc::new(Mutex::new(RedisStorage::new()));
 
+    let mut application_commands: CommandMap = HashMap::new();
+    application_commands.insert("create-event", Box::new(CreateEvent::new(redis_storage.clone())));
+
     rocket::build()
-        .manage(redis_storage)
+        .manage(Arc::new(application_commands))
         .mount("/", routes![index])
         .mount("/", routes![interactions])
 }

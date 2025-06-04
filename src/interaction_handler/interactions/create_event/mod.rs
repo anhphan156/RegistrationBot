@@ -7,14 +7,13 @@ use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 
 use role::Role;
-use crate::interaction_handler::message_component::MessageComponent;
-use crate::interaction_handler::{ApplicationCommand, InteractionProcessor};
-use crate::discord::embed::{EmbedField, EmbedFooterBuilder, EmbedImage};
-use crate::discord::{embed::Embed, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
+use crate::interaction_handler::{ApplicationCommand, InteractionProcessor, MessageComponent};
+use crate::discord::{embed::{Embed, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
 use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
+#[derive(Clone)]
 pub struct CreateEvent {
     interaction: Option<Interaction>,
     redis_storage: Arc<Mutex<RedisStorage>>,
@@ -96,7 +95,11 @@ impl CreateEvent {
     }
 }
 
-impl InteractionProcessor for CreateEvent {}
+impl InteractionProcessor for CreateEvent {
+    fn clone_box(&self) -> Box<dyn InteractionProcessor + Sync + Send> {
+        Box::new(self.clone())
+    }
+}
 
 #[rocket::async_trait]
 impl ApplicationCommand for CreateEvent {

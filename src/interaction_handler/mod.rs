@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
+
 use crate::discord::{interaction::Interaction, interaction_response::{IRStatus, InteractionResponse}};
 use message_component::MessageComponent;
 use application_command::ApplicationCommand;
@@ -7,38 +8,37 @@ pub mod interactions;
 mod message_component;
 mod application_command;
 
-pub trait InteractionProcessor: ApplicationCommand + MessageComponent {}
-
-type ApplicationCommandBox = Box<dyn InteractionProcessor + Sync + Send>;
-
-pub struct InteractionHandler {
-    application_commands: HashMap<&'static str, ApplicationCommandBox>,
+pub trait InteractionProcessor: ApplicationCommand + MessageComponent {
+    fn clone_box(&self) -> Box<dyn InteractionProcessor + Sync + Send>;
 }
 
-#[macro_export]
-macro_rules! add_interaction {
-    ($handler:expr, $(($name:expr, $interaction:expr)),*) => {
-        $($handler.add_interaction($name, Box::new($interaction));)*
-    };
+pub type ApplicationCommandBox = Box<dyn InteractionProcessor + Sync + Send>;
+pub type CommandMap = HashMap<&'static str, ApplicationCommandBox>;
+
+impl Clone for ApplicationCommandBox {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+pub struct InteractionHandler {
+    command_map: Arc<CommandMap>
 }
 
 impl InteractionHandler {
-    pub fn new() -> InteractionHandler {
+    pub fn new(command_map: Arc<CommandMap>) -> InteractionHandler {
         InteractionHandler {
-            application_commands: HashMap::new(),
+            command_map, 
         }
     }
 
-    pub fn add_interaction(&mut self, name: &'static str, command_object: ApplicationCommandBox) {
-        self.application_commands.insert(name, command_object);
-    }
-
     pub async fn handle_slash_command(&mut self, interaction: &Interaction) -> InteractionResponse {
-        let command_name = interaction.get_command_name().unwrap_or_default();
-        let command = match self.application_commands.get_mut(command_name) {
-            Some(c) => c,
+        let command_name = interaction.get_command_name().map_or("", |x| x);
+        let mut command = match self.command_map.get(command_name) {
+            Some(c) => c.clone(),
             None => return InteractionResponse::create_message(String::from("Command not found")),
         };
+
         command.application_command_init(interaction);
         command.application_command_action().await
     }
@@ -54,10 +54,9 @@ impl InteractionHandler {
             None => return Err(IRStatus::PatchFailed),
         };
 
-
-        let command_name = interaction.get_command_name().unwrap_or_default();
-        let command = match self.application_commands.get_mut(command_name) {
-            Some(c) => c,
+        let command_name = interaction.get_command_name().map_or("", |x| x);
+        let mut command = match self.command_map.get(command_name) {
+            Some(c) => c.clone(),
             None => return Err(IRStatus::PatchFailed),
         };
 

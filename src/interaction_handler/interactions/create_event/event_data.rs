@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::role::Role;
 
-#[derive(Builder, Deserialize, Serialize, Default)]
+#[derive(Builder, Deserialize, Serialize, Default, Clone)]
 pub struct EventData {
     #[builder(default = "0")]
     event_time: i64,
