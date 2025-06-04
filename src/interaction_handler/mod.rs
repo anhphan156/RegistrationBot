@@ -1,12 +1,12 @@
 pub mod interactions;
+pub mod interaction_table;
 
 use std::{collections::HashMap, sync::Arc};
+use interaction_table::InteractionMap;
 use crate::discord::{interaction::{Interaction, InteractionMetadata}, interaction_response::{IRStatus, InteractionResponse}};
 
 #[rocket::async_trait]
 pub trait InteractionProcessor: Sync + Send {
-    fn clone_box(&self) -> Box<dyn InteractionProcessor>;
-
     async fn application_command_action(&mut self, _interaction: &Interaction) -> InteractionResponse {
         InteractionResponse::create_message(String::from("Under construction!"))
     }
@@ -15,14 +15,6 @@ pub trait InteractionProcessor: Sync + Send {
         InteractionResponse::create_message(String::from("Under construction!"))
     }
 }
-
-impl Clone for Box<dyn InteractionProcessor>{
-    fn clone(&self) -> Self {
-        self.clone_box()
-    }
-}
-
-pub type InteractionMap = HashMap<&'static str, Box<dyn InteractionProcessor>>;
 
 pub struct InteractionHandler {
     interaction_map: Arc<InteractionMap>

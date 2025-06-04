@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
-
 use role::Role;
 use crate::interaction_handler::InteractionProcessor;
 use crate::discord::{embed::{Embed, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
@@ -43,10 +42,6 @@ impl CreateEvent {
             .fields(description_fields)
             .build();
             
-        // let roles_embed = Embed::new() 
-        //     .fields(Role::roles_to_embedfields(&roles))
-        //     .build();
-
         let picture_embed = Embed::new()
             // .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg")) // dev
             .image(EmbedImage::new("https://i.imgur.com/RiB0TBM.jpeg")) // presentation
@@ -76,7 +71,6 @@ impl CreateEvent {
         ]);
 
         let data = InteractionCallbackData::new() 
-            // .embeds(vec![ description_embed, roles_embed, picture_embed ])
             .embeds(vec![ description_embed, picture_embed ])
             .action_rows(rows)
             .build();
@@ -92,10 +86,6 @@ impl CreateEvent {
 
 #[rocket::async_trait]
 impl InteractionProcessor for CreateEvent {
-    fn clone_box(&self) -> Box<dyn InteractionProcessor> {
-        Box::new(self.clone())
-    }
-
     async fn application_command_action(&mut self, interaction: &Interaction) -> InteractionResponse {
         let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
         let mut event_data = EventDataBuilder::default()

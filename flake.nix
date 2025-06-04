@@ -33,10 +33,12 @@
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
+            (python3.withPackages (p:
+              with p; [
+                requests
+              ]))
             rust-toolchain
             cargo-watch
-            python3
-            python3Packages.requests
             ngrok
             openssl
             pkg-config

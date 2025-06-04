@@ -5,8 +5,9 @@ mod persistence;
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use interaction_handler::interaction_table::{generate_interaction_map, InteractionMap};
 use tokio::sync::Mutex;
-use interaction_handler::{InteractionMap, InteractionHandler, interactions::create_event::CreateEvent};
+use interaction_handler::{ InteractionHandler, interactions::create_event::CreateEvent};
 use discord::interaction::{Interaction, InteractionType};
 use discord::interaction_response::InteractionResponse;
 use persistence::redis_storage::RedisStorage;
@@ -17,13 +18,8 @@ use rocket::State;
 #[macro_use] extern crate rocket;
 
 #[get("/")]
-fn index() -> String {
-    let t = RegistrationTime::utc_to_unix("5/8/1994 8:00 am".to_string());
-
-    match t {
-        Ok(r) => return r.to_string(),
-        Err(e) => return e.to_string()
-    }
+fn index() -> &'static str {
+    "Hello"
 }
 
 #[post("/interactions", data = "<interaction>")]
@@ -54,10 +50,7 @@ async fn interactions(interaction: Interaction, command_map: &State<Arc<Interact
 
 #[launch]
 fn rocket() -> _ {
-    let redis_storage = Arc::new(Mutex::new(RedisStorage::new()));
-
-    let mut application_commands: InteractionMap = HashMap::new();
-    application_commands.insert("create-event", Box::new(CreateEvent::new(redis_storage.clone())));
+    let application_commands = generate_interaction_map();
 
     rocket::build()
         .manage(Arc::new(application_commands))
