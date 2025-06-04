@@ -12,3 +12,10 @@ macro_rules! log_expression {
         println!("{} at {} on {}", $v, file!(), line!());
     }
 }
+
+#[macro_export]
+macro_rules! log_enum {
+    ($v:expr) => {
+        println!("{:?} at {} on {}", $v, file!(), line!());
+    }
+}

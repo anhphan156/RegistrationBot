@@ -7,25 +7,20 @@ use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 
 use role::Role;
-use crate::interaction_handler::{ApplicationCommand, InteractionProcessor, MessageComponent};
+use crate::interaction_handler::InteractionProcessor;
 use crate::discord::{embed::{Embed, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
-use crate::utils::snowflake::Snowflake;
 use crate::utils::timestamp::RegistrationTime;
 
 #[derive(Clone)]
 pub struct CreateEvent {
-    interaction: Option<Interaction>,
     redis_storage: Arc<Mutex<RedisStorage>>,
     event_data: Option<EventData>,
-    event_id: Option<Snowflake>,
 }
 
 impl CreateEvent {
     pub fn new(redis_storage: Arc<Mutex<RedisStorage>>) -> CreateEvent{
         CreateEvent { 
-            interaction: None,
-            event_id: None,
             event_data: None,
             redis_storage,
         }
@@ -95,30 +90,22 @@ impl CreateEvent {
     }
 }
 
+#[rocket::async_trait]
 impl InteractionProcessor for CreateEvent {
-    fn clone_box(&self) -> Box<dyn InteractionProcessor + Sync + Send> {
+    fn clone_box(&self) -> Box<dyn InteractionProcessor> {
         Box::new(self.clone())
     }
-}
 
-#[rocket::async_trait]
-impl ApplicationCommand for CreateEvent {
-    fn application_command_init(&mut self, interaction: &Interaction) {
+    async fn application_command_action(&mut self, interaction: &Interaction) -> InteractionResponse {
         let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
-        let event_data = EventDataBuilder::default()
+        let mut event_data = EventDataBuilder::default()
             .event_time(time)
             .build()
             .unwrap();
 
-        self.interaction = Some(interaction.clone());
-        self.event_data = Some(event_data);
-        self.event_id = Some(interaction.id.clone());
-    }
-    async fn application_command_action(&mut self) -> InteractionResponse {
-        let event_data = self.event_data.as_mut().expect("Event data not found in create-event interaction");
         let redis_storage = self.redis_storage.lock().await;
 
-        let roles_template_url = match self.interaction.as_ref().expect("Interaction not found").get_string_option_value_by_name("template") {
+        let roles_template_url = match interaction.get_string_option_value_by_name("template") {
             Some(url) => url,
             None => return InteractionResponse::create_emphemeral_message(String::from("Failed to parse url from interaction")),
         };
@@ -131,32 +118,20 @@ impl ApplicationCommand for CreateEvent {
         };
         event_data.set_roles(&roles);
 
-        let event_id = self.event_id.as_ref().map_or("", |x| x);
-        let _ = redis_storage.persist_json(&event_id, &event_data).await;
+        let _ = redis_storage.persist_json(&interaction.id, &event_data).await;
+        self.event_data = Some(event_data);
 
         self.generate_event_embed()
     }
-}
 
-#[rocket::async_trait]
-impl MessageComponent for CreateEvent {
-    fn message_component_init(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata){
-        let event_id = parent_interaction.id.clone().unwrap_or_default();
-
-        self.interaction = Some(interaction.clone());
-        self.event_data = None;
-        self.event_id = Some(event_id);
-    }
-
-    async fn message_component_action(&mut self) -> InteractionResponse {
-        let interaction = self.interaction.as_ref().unwrap();
+    async fn message_component_action(&mut self, interaction: &Interaction, parent_interaction: &crate::discord::interaction::InteractionMetadata) -> InteractionResponse {
         let redis_storage = self.redis_storage.lock().await;
 
-        let event_id = self.event_id.as_ref().map_or("", |x| x);
+        let event_id = parent_interaction.id.as_ref().map_or("", |x| x);
         let mut event_data = match redis_storage.retrieve_json::<EventData>(&event_id).await {
             Ok(ed) => ed,
             Err(e) => {
-                println!("{:?}", e);
+                crate::log_enum!(e);
                 return InteractionResponse::create_emphemeral_message(String::from("Event corrupted"));
             }
         };
