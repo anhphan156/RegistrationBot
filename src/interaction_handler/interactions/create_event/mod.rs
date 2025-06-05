@@ -14,20 +14,20 @@ use crate::utils::timestamp::RegistrationTime;
 #[derive(Clone)]
 pub struct CreateEvent {
     redis_storage: Arc<Mutex<RedisStorage>>,
-    event_data: Option<EventData>,
+    event_data: EventData,
 }
 
 impl CreateEvent {
     pub fn new(redis_storage: Arc<Mutex<RedisStorage>>) -> CreateEvent{
         CreateEvent { 
-            event_data: None,
+            event_data: EventData::default(),
             redis_storage,
         }
     }
 
     fn generate_event_embed(&self) -> InteractionResponse {
-        let roles = self.event_data.as_ref().expect("Event data not found").get_roles();
-        let unix_timestamp = self.event_data.as_ref().expect("Event data not found").get_time();
+        let roles = self.event_data.get_roles();
+        let unix_timestamp = self.event_data.get_time();
         let utc_timestamp = RegistrationTime::unix_to_utc(unix_timestamp);
 
         let mut description_fields = vec![
@@ -88,7 +88,7 @@ impl CreateEvent {
 impl InteractionProcessor for CreateEvent {
     async fn application_command_action(&mut self, interaction: &Interaction) -> InteractionResponse {
         let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
-        let mut event_data = EventDataBuilder::default()
+        self.event_data = EventDataBuilder::default()
             .event_time(time)
             .build()
             .unwrap();
@@ -106,10 +106,9 @@ impl InteractionProcessor for CreateEvent {
                 return InteractionResponse::create_emphemeral_message(format!("Failed to fetch role template: {}", e));
             }
         };
-        event_data.set_roles(&roles);
+        self.event_data.set_roles(&roles);
 
-        let _ = redis_storage.persist_json(&interaction.id, &event_data).await;
-        self.event_data = Some(event_data);
+        let _ = redis_storage.persist_json(&interaction.id, &self.event_data).await;
 
         self.generate_event_embed()
     }
@@ -118,7 +117,7 @@ impl InteractionProcessor for CreateEvent {
         let redis_storage = self.redis_storage.lock().await;
 
         let event_id = parent_interaction.id.as_ref().map_or("", |x| x);
-        let mut event_data = match redis_storage.retrieve_json::<EventData>(&event_id).await {
+        self.event_data = match redis_storage.retrieve_json::<EventData>(&event_id).await {
             Ok(ed) => ed,
             Err(e) => {
                 crate::log_enum!(e);
@@ -128,14 +127,13 @@ impl InteractionProcessor for CreateEvent {
 
         let reacting_member = interaction.get_interacted_member().unwrap_or(String::from("Interacted user not found"));
         match interaction.get_button_id() {
-            Some("Cancel") => player_cancel(&reacting_member, event_data.get_roles_mut()),
+            Some("Cancel") => player_cancel(&reacting_member, self.event_data.get_roles_mut()),
             Some("Pregear") => {crate::log_expression!("pregearing");},
-            Some(id) => player_pick_role(&reacting_member, id, event_data.get_roles_mut()),
+            Some(id) => player_pick_role(&reacting_member, id, self.event_data.get_roles_mut()),
             None => {crate::log_expression!("unknown button");}
         }
 
-        let _ = redis_storage.persist_json(&event_id, &event_data).await;
-        self.event_data = Some(event_data);
+        let _ = redis_storage.persist_json(&event_id, &self.event_data).await;
 
         self.generate_event_embed()
     }
