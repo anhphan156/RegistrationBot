@@ -7,7 +7,7 @@ use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 use role::Role;
 use crate::interaction_handler::InteractionProcessor;
-use crate::discord::{embed::{Embed, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
+use crate::discord::{embed::{EmbedBuilder, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
 use crate::utils::timestamp::RegistrationTime;
 
@@ -36,17 +36,19 @@ impl CreateEvent {
         ];
         description_fields.append(&mut Role::roles_to_embedfields(&roles));
 
-        let description_embed = Embed::new()
+        let description_embed = EmbedBuilder::default()
             .thumbnail(EmbedImage::new("https://i.imgur.com/EVXo4CB.jpeg"))
-            .title("Event title goes here")
+            .title("Event title goes here".into())
             .fields(description_fields)
-            .build();
+            .build()
+            .unwrap();
             
-        let picture_embed = Embed::new()
+        let picture_embed = EmbedBuilder::default()
             // .image(EmbedImage::new("https://i.imgur.com/z28A4yA.jpeg")) // dev
             .image(EmbedImage::new("https://i.imgur.com/RiB0TBM.jpeg")) // presentation
             .footer(EmbedFooterBuilder::default().text(format!("Unique Signups: {}", unique_signups(&roles))).build().unwrap())
-            .build();
+            .build()
+            .unwrap();
 
         let mut rows = generate_buttons(&roles);
         rows.append(&mut vec![ 

@@ -3,11 +3,9 @@ mod interaction_handler;
 mod utils;
 mod persistence;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use interaction_handler::interaction_table::{generate_interaction_map, InteractionMap};
-use tokio::sync::Mutex;
-use interaction_handler::{ InteractionHandler, interactions::create_event::CreateEvent};
+use interaction_handler::InteractionHandler;
 use discord::interaction::{Interaction, InteractionType};
 use discord::interaction_response::InteractionResponse;
 use persistence::redis_storage::RedisStorage;
