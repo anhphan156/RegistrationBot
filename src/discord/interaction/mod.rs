@@ -1,8 +1,17 @@
+mod user;
+mod message;
+mod member;
+mod interaction_data;
+mod interaction_metadata;
+mod command_option;
+
+pub use self::{user::*, message::*, interaction_metadata::*, member::*, command_option::*, interaction_data::*};
+
 use rocket::{data::{FromData, Outcome as DataOutcome, ToByteUnit}, http::Status, serde::json, Data, Request};
 use serde::{Serialize, Deserialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::utils::{crypto::Crypto, snowflake::Snowflake};
-use super::{embed::Embed, user::User};
+use super::embed::Embed;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Interaction {
@@ -117,41 +126,4 @@ pub enum InteractionType {
     MESSAGECOMPONENT = 3,
     APPLICATIONCOMMANDAUTOCOMPLE = 4,
     MODALSUBMIT = 5,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct InteractionData {
-    pub name: Option<String>,
-    pub custom_id: Option<String>,
-    pub options: Option<Vec<CommandOption>>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct CommandOption {
-    pub name: Option<String>,
-
-    #[serde(rename="type")]
-    pub option_type: Option<u8>,
-    pub value: Option<json::Value>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct Message {
-    pub id: Option<String>,
-    pub embeds: Option<Vec<Embed>>,
-    #[serde(rename="interaction")]
-    pub parent_interaction: Option<InteractionMetadata>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct Member {
-    pub nick: Option<String>,
-    pub user: Option<User>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct InteractionMetadata {
-    pub id: Option<String>,
-    pub user: Option<User>,
-    pub name: Option<String>,
 }
