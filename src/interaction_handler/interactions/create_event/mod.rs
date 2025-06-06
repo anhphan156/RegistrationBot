@@ -6,8 +6,9 @@ use std::sync::Arc;
 use event_data::{EventData, EventDataBuilder};
 use tokio::sync::Mutex;
 use role::Role;
+use crate::discord::interaction_response::InteractionResponseBuilder;
 use crate::interaction_handler::InteractionProcessor;
-use crate::discord::{embed::{EmbedBuilder, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, Component, InteractionCallbackData, InteractionResponse}};
+use crate::discord::{embed::{EmbedBuilder, EmbedImage, EmbedFooterBuilder, EmbedField}, emoji::Emoji, interaction::Interaction, interaction_response::{ActionRow, ComponentBuilder, InteractionCallbackDataBuilder, InteractionResponse}};
 use crate::persistence::redis_storage::RedisStorage;
 use crate::utils::timestamp::RegistrationTime;
 
@@ -53,36 +54,52 @@ impl CreateEvent {
         let mut rows = generate_buttons(&roles);
         rows.append(&mut vec![ 
             ActionRow::new(vec![ 
-                Component::new(2, 1)
+                ComponentBuilder::default()
+                    .component_type(2)
+                    .style(2)
                     .label(String::from("Pregear"))
                     .custom_id(String::from("Pregear"))
                     .emoji(Emoji {
                         id: None,
                         name: Some(String::from("👍"))
                     })
-                    .build(),
-                Component::new(2, 1)
+                    .build()
+                    .unwrap(),
+                ComponentBuilder::default()
+                    .component_type(2)
+                    .style(4)
                     .label(String::from("Cancel"))
                     .custom_id(String::from("Cancel"))
                     .emoji(Emoji {
                         id: None,
-                        name: Some(String::from("❌"))
+                        name: Some(String::from("✖️"))
                     })
                     .build()
+                    .unwrap()
             ])
         ]);
 
-        let data = InteractionCallbackData::new() 
+        let data = match InteractionCallbackDataBuilder::default() 
             .embeds(vec![ description_embed, picture_embed ])
             .action_rows(rows)
-            .build();
+            .build() {
+                Ok(d) => d,
+                Err(e) => {
+                    crate::log_expression_debug!(e);
+                    return InteractionResponse::create_emphemeral_message(String::from("Failed to initialize event."));
+                }
+            };
 
-        let interaction_response = InteractionResponse::new()
+        return match InteractionResponseBuilder::default()
             .response_type(4)
             .data(data)
-            .build();
-
-        interaction_response
+            .build() {
+                Ok(r) => r,
+                Err(e) => {
+                    crate::log_expression_debug!(e);
+                    return InteractionResponse::create_emphemeral_message(String::from("Failed to initialize event."));
+                }
+            };
     }
 }
 
@@ -90,10 +107,18 @@ impl CreateEvent {
 impl InteractionProcessor for CreateEvent {
     async fn application_command_action(&mut self, interaction: &Interaction) -> InteractionResponse {
         let time = RegistrationTime::utc_to_unix("5/07/2025 10:00 am".to_string()).unwrap_or_default();
-        self.event_data = EventDataBuilder::default()
+
+        let event_data = EventDataBuilder::default()
             .event_time(time)
-            .build()
-            .unwrap();
+            .build();
+
+        self.event_data = match event_data {
+            Ok(ed) => ed,
+            Err(e) => {
+                crate::log_expression_debug!(e);
+                return InteractionResponse::create_emphemeral_message(String::from("Failed to initialize event."));
+            }
+        };
 
         let redis_storage = self.redis_storage.lock().await;
 
@@ -122,12 +147,12 @@ impl InteractionProcessor for CreateEvent {
         self.event_data = match redis_storage.retrieve_json::<EventData>(&event_id).await {
             Ok(ed) => ed,
             Err(e) => {
-                crate::log_enum!(e);
+                crate::log_expression_debug!(e);
                 return InteractionResponse::create_emphemeral_message(String::from("Event corrupted"));
             }
         };
 
-        let reacting_member = interaction.get_interacted_member().unwrap_or(String::from("Interacted user not found"));
+        let reacting_member = interaction.get_interacted_member().unwrap_or("Interacted user not found");
         match interaction.get_button_id() {
             Some("Cancel") => player_cancel(&reacting_member, self.event_data.get_roles_mut()),
             Some("Pregear") => {crate::log_expression!("pregearing");},
@@ -148,11 +173,14 @@ fn generate_buttons(roles: &[Role]) -> Vec<ActionRow> {
         let button_count = if row == row_count - 1 { role_count % 5 } else { 5 };
         let components = (0..button_count).map(|button| {
             let role_index = usize::min(role_count - 1, row * 5 + button);
-            Component::new(2, 1)
+            ComponentBuilder::default()
+                .component_type(2)
+                .style(1)
                 .label(format!("{}", roles[role_index].name))
                 .custom_id(format!("{}", roles[role_index].name))
                 .emoji(Emoji { id: None, name: Some(roles[role_index].emoji.clone()) })
                 .build()
+                .unwrap()
         }).collect();
 
         ActionRow::new(components)

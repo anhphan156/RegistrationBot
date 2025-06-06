@@ -14,7 +14,7 @@ macro_rules! log_expression {
 }
 
 #[macro_export]
-macro_rules! log_enum {
+macro_rules! log_expression_debug {
     ($v:expr) => {
         println!("{:?} at {} on {}", $v, file!(), line!());
     }

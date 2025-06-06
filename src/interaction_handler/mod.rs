@@ -37,18 +37,30 @@ impl InteractionHandler {
         command.application_command_action(interaction).await
     }
 
-    pub async fn handle_message_component(&mut self, interaction: &Interaction) -> Result<IRStatus, IRStatus> {
-        let parent_interaction : &InteractionMetadata = match interaction.message.as_ref().and_then(|x| x.parent_interaction.as_ref()) {
+    pub async fn handle_message_component(&mut self, interaction: &Interaction) -> InteractionResponse {
+        let parent_interaction : &InteractionMetadata = match interaction.get_interaction_metadata() {
             Some(pi) => pi,
-            None => return Err(IRStatus::PatchFailed),
+            None => {
+                crate::log_expression!("parent interaction not found");
+                return InteractionResponse::create_emphemeral_message(String::from("Interaction failed"));
+            },
         };
 
         let command_name = interaction.get_command_name().map_or("", |x| x);
         let mut command = match self.interaction_map.get(command_name) {
             Some(c) => c.clone(),
-            None => return Err(IRStatus::PatchFailed),
+            None => {
+                crate::log_expression!("command not found");
+                return InteractionResponse::create_emphemeral_message(String::from("Interaction failed"));
+            },
         };
 
-        command.message_component_action(interaction, parent_interaction).await.edit_message(interaction).await
+        match command.message_component_action(interaction, parent_interaction).await.edit_message(interaction).await {
+            Ok(_) => InteractionResponse::create_empty_message(),
+            Err(e) => {
+                crate::log_expression_debug!(e);
+                InteractionResponse::create_emphemeral_message(String::from("Interaction failed"))
+            }
+        }
     }
 }

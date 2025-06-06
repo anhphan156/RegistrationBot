@@ -35,10 +35,10 @@ impl Interaction {
         None
     }
 
-    pub fn get_interacted_member(&self) -> Option<String> {
-        let mut interacted_member = self.member.as_ref().map(|x| x.nick.clone()).flatten();
+    pub fn get_interacted_member(&self) -> Option<&str> {
+        let mut interacted_member = self.member.as_ref().map(|x| x.nick.as_ref().map(|x| x.as_str())).flatten();
         if interacted_member.is_none() {
-            interacted_member = self.user.as_ref().map(|x| x.username.clone());
+            interacted_member = self.user.as_ref().map(|x| x.username.as_str());
         }
 
         interacted_member
@@ -65,6 +65,10 @@ impl Interaction {
 
     pub fn get_button_id(&self) -> Option<&str> {
         self.data.as_ref().and_then(|x| x.custom_id.as_ref().map(|y| y.as_str()))
+    }
+
+    pub fn get_interaction_metadata(&self) -> Option<&InteractionMetadata> {
+        self.message.as_ref().and_then(|x| x.parent_interaction.as_ref())
     }
 }
 

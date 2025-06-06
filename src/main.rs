@@ -30,14 +30,11 @@ async fn interactions(interaction: Interaction, command_map: &State<Arc<Interact
         InteractionType::APPLICATIONCOMMAND => return Json(interaction_handler.handle_application_command(&interaction).await),
         InteractionType::MESSAGECOMPONENT => {
             tokio::spawn(async move {
-                let status = interaction_handler.handle_message_component(&interaction).await;
-                match status {
-                    Ok(s) => println!("Message component handler: {:?}", s),
-                    Err(s) => {
-                        println!("Failed to edit message {:?}", s);
-                        let _ = InteractionResponse::create_emphemeral_message(String::from("Hell yeah"))
-                            .send_follow_up_message(&interaction).await;
-                    },
+                let result = interaction_handler.handle_message_component(&interaction).await;
+                if let Some(_) = result.get_data() {
+                    if let Err(e) = result.send_follow_up_message(&interaction).await {
+                        crate::log_expression_debug!(e);
+                    }
                 }
             });
             return Json(InteractionResponse::silent_defer())
